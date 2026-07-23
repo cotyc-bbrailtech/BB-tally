@@ -178,11 +178,16 @@
                 <div id="day-name" class="text-sm font-medium text-slate-500 pl-0.5"></div>
             </div>
             
-            <div class="text-right">
+            <div class="text-right space-y-1">
                 <div id="last-saved" 
                      class="text-[10px] font-medium px-2.5 py-px rounded-2xl bg-emerald-100 text-emerald-700 inline-flex items-center gap-x-1">
                     <i class="fa-solid fa-check-circle text-xs"></i>
                     <span>Saved</span>
+                </div>
+                <div id="cloud-status"
+                     class="text-[10px] font-medium px-2.5 py-px rounded-2xl bg-slate-100 text-slate-500 inline-flex items-center gap-x-1">
+                    <i class="fa-solid fa-cloud text-slate-400"></i>
+                    <span>Checking…</span>
                 </div>
             </div>
         </div>
@@ -703,21 +708,130 @@
                 { label: 'Pneumatic issue', value: 'Pneumatic pressure issue', icon: 'fa-wind' }
             ]
         };
-        let persistenceAvailable = true; // will be set false in restricted environments (sandbox, private mode, etc.)
+        let persistenceAvailable = true; // localStorage usable?
+        let cloudAvailable = false;      // GitHub storage configured + reachable
+        let cloudStatus = 'checking';    // checking | online | offline
+        const GH_CONFIG_KEY = 'bb_tally_gh_config_v1';
+        let ghConfig = null; // { owner, repo, token, path }
+        let ghFileSha = null; // current SHA of data/tallies.json on GitHub
 
-        // Test whether localStorage is usable in the current context
-        function testLocalStorage() {
+        function loadGhConfig() {
             try {
-                const testKey = '__bb_tally_test__';
-                localStorage.setItem(testKey, 'ok');
-                localStorage.removeItem(testKey);
+                const raw = localStorage.getItem(GH_CONFIG_KEY);
+                ghConfig = raw ? JSON.parse(raw) : null;
+                if (ghConfig && (!ghConfig.owner || !ghConfig.repo || !ghConfig.token)) ghConfig = null;
+            } catch (e) {
+                ghConfig = null;
+            }
+        }
+
+        function saveGhConfig(cfg) {
+            ghConfig = cfg;
+            localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(cfg));
+        }
+
+        function clearGhConfig() {
+            ghConfig = null;
+            localStorage.removeItem(GH_CONFIG_KEY);
+            cloudAvailable = false;
+            cloudStatus = 'offline';
+            updateCloudBadge();
+        }
+
+        function updateCloudBadge() {
+            const el = document.getElementById('cloud-status');
+            if (!el) return;
+            if (cloudStatus === 'online') {
+                el.innerHTML = '<i class="fa-brands fa-github text-emerald-600"></i><span>GitHub saved</span>';
+                el.className = 'text-[10px] font-medium px-2.5 py-px rounded-2xl bg-emerald-100 text-emerald-700 inline-flex items-center gap-x-1';
+            } else if (cloudStatus === 'checking') {
+                el.innerHTML = '<i class="fa-brands fa-github text-slate-400"></i><span>Checking…</span>';
+                el.className = 'text-[10px] font-medium px-2.5 py-px rounded-2xl bg-slate-100 text-slate-500 inline-flex items-center gap-x-1';
+            } else if (ghConfig) {
+                el.innerHTML = '<i class="fa-brands fa-github text-amber-600"></i><span>Reconnect</span>';
+                el.className = 'text-[10px] font-medium px-2.5 py-px rounded-2xl bg-amber-100 text-amber-700 inline-flex items-center gap-x-1 cursor-pointer';
+                el.onclick = () => openGhSettings();
+            } else {
+                el.innerHTML = '<i class="fa-brands fa-github text-slate-400"></i><span>Device only</span>';
+                el.className = 'text-[10px] font-medium px-2.5 py-px rounded-2xl bg-slate-100 text-slate-500 inline-flex items-center gap-x-1 cursor-pointer';
+                el.onclick = () => openGhSettings();
+            }
+        }
+
+        function ghHeaders() {
+            return {
+                'Authorization': 'Bearer ' + ghConfig.token,
+                'Accept': 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28'
+            };
+        }
+
+        function ghContentsUrl() {
+            const p = encodeURIComponent(ghConfig.path || 'data/tallies.json').replace(/%2F/g, '/');
+            return `https://api.github.com/repos/${ghConfig.owner}/${ghConfig.repo}/contents/${p}`;
+        }
+
+        /** Load shared tallies from GitHub (data/tallies.json in the repo) */
+        async function initCloud() {
+            loadGhConfig();
+            if (!ghConfig) {
+                cloudAvailable = false;
+                cloudStatus = 'offline';
+                updateCloudBadge();
+                return false;
+            }
+            cloudStatus = 'checking';
+            updateCloudBadge();
+            try {
+                const res = await fetch(ghContentsUrl() + '?ref=main', {
+                    headers: ghHeaders(),
+                    cache: 'no-store'
+                });
+                if (res.status === 404) {
+                    // File doesn't exist yet — create empty store
+                    ghFileSha = null;
+                    await pushFullStoreToGithub(currentData || {});
+                    cloudAvailable = true;
+                    cloudStatus = 'online';
+                    updateCloudBadge();
+                    return true;
+                }
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.message || ('HTTP ' + res.status));
+                }
+                const body = await res.json();
+                ghFileSha = body.sha;
+                const decoded = JSON.parse(atob(body.content.replace(/\n/g, '')));
+                // Merge remote with local
+                const local = currentData || {};
+                const merged = { ...local };
+                Object.keys(decoded || {}).forEach(date => {
+                    const r = decoded[date];
+                    const l = local[date];
+                    if (!l) merged[date] = r;
+                    else {
+                        const rTime = r.last_updated ? Date.parse(r.last_updated) : 0;
+                        const lTime = l.last_updated ? Date.parse(l.last_updated) : 0;
+                        merged[date] = rTime >= lTime ? r : l;
+                    }
+                });
+                currentData = merged;
+                saveDataLocal();
+                cloudAvailable = true;
+                cloudStatus = 'online';
+                updateCloudBadge();
                 return true;
             } catch (e) {
+                console.warn('[Tally] GitHub sync failed:', e);
+                cloudAvailable = false;
+                cloudStatus = 'offline';
+                updateCloudBadge();
+                showToast('GitHub sync failed — using device only', true);
                 return false;
             }
         }
-        
-        // Load data from localStorage (or stay empty if unavailable)
+
         function loadData() {
             if (!persistenceAvailable) {
                 currentData = {};
@@ -727,21 +841,145 @@
                 const saved = localStorage.getItem(STORAGE_KEY);
                 currentData = saved ? JSON.parse(saved) : {};
             } catch (e) {
-                console.warn('localStorage unavailable – running in memory-only mode', e);
+                console.warn('localStorage unavailable', e);
                 persistenceAvailable = false;
                 currentData = {};
             }
         }
-        
-        // Save all data to localStorage (no-op if unavailable)
-        function saveData() {
+
+        function saveDataLocal() {
             if (!persistenceAvailable) return;
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(currentData));
             } catch (e) {
                 console.warn('Failed to write localStorage', e);
                 persistenceAvailable = false;
-                showRestrictedBanner();
+                if (typeof showRestrictedBanner === 'function') showRestrictedBanner();
+            }
+        }
+
+        function saveData() {
+            saveDataLocal();
+            if (cloudAvailable) {
+                // Debounced full-store push (simple + reliable for small datasets)
+                scheduleGithubPush();
+            }
+        }
+
+        let ghPushTimer = null;
+        function scheduleGithubPush() {
+            if (ghPushTimer) clearTimeout(ghPushTimer);
+            ghPushTimer = setTimeout(() => {
+                pushFullStoreToGithub(currentData);
+            }, 1200);
+        }
+
+        async function pushFullStoreToGithub(data) {
+            if (!ghConfig) return;
+            try {
+                const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+                const payload = {
+                    message: `Update tallies ${new Date().toISOString().slice(0, 16)}`,
+                    content,
+                    branch: 'main'
+                };
+                if (ghFileSha) payload.sha = ghFileSha;
+
+                const res = await fetch(ghContentsUrl(), {
+                    method: 'PUT',
+                    headers: { ...ghHeaders(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.status === 409 || res.status === 422) {
+                    // SHA conflict — re-fetch and retry once
+                    const getRes = await fetch(ghContentsUrl() + '?ref=main', { headers: ghHeaders(), cache: 'no-store' });
+                    if (getRes.ok) {
+                        const body = await getRes.json();
+                        ghFileSha = body.sha;
+                        payload.sha = ghFileSha;
+                        const retry = await fetch(ghContentsUrl(), {
+                            method: 'PUT',
+                            headers: { ...ghHeaders(), 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (!retry.ok) throw new Error('retry failed ' + retry.status);
+                        const out = await retry.json();
+                        ghFileSha = out.content?.sha || ghFileSha;
+                    } else {
+                        throw new Error('conflict resolve failed');
+                    }
+                } else if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.message || ('HTTP ' + res.status));
+                } else {
+                    const out = await res.json();
+                    ghFileSha = out.content?.sha || ghFileSha;
+                }
+                cloudAvailable = true;
+                cloudStatus = 'online';
+                updateCloudBadge();
+            } catch (e) {
+                console.warn('GitHub push failed', e);
+                cloudStatus = 'offline';
+                updateCloudBadge();
+            }
+        }
+
+        async function deleteDayFromCloud(dateStr) {
+            // Full store is rewritten on next saveData — just ensure push happens
+            if (cloudAvailable) scheduleGithubPush();
+        }
+
+        function openGhSettings() {
+            loadGhConfig();
+            const existing = ghConfig || { owner: 'cotycoots-tech', repo: 'bb-tally-board', token: '', path: 'data/tallies.json' };
+            const html = `
+                <div class="fixed inset-0 bg-black/50 z-[200] flex items-end sm:items-center justify-center" id="gh-settings-modal">
+                    <div class="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto" onclick="event.stopImmediatePropagation()">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <div class="text-[10px] font-bold text-slate-400 tracking-wider">CLOUD STORAGE</div>
+                                <div class="text-lg font-bold text-slate-900">GitHub Sync</div>
+                            </div>
+                            <button onclick="document.getElementById('gh-settings-modal').remove()" class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center">
+                                <i class="fa-solid fa-times text-slate-500"></i>
+                            </button>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-4">Saves every tally into a file in your GitHub repo. Free — no Render needed. Create a fine-grained token with <b>Contents: Read and write</b> on this repo.</p>
+                        <label class="text-[10px] font-bold text-slate-500 block mb-1">Repo owner</label>
+                        <input id="gh-owner" value="${existing.owner || ''}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="cotycoots-tech">
+                        <label class="text-[10px] font-bold text-slate-500 block mb-1">Repo name</label>
+                        <input id="gh-repo" value="${existing.repo || ''}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="bb-tally-board">
+                        <label class="text-[10px] font-bold text-slate-500 block mb-1">Personal access token</label>
+                        <input id="gh-token" type="password" value="${existing.token || ''}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="github_pat_…">
+                        <label class="text-[10px] font-bold text-slate-500 block mb-1">File path in repo</label>
+                        <input id="gh-path" value="${existing.path || 'data/tallies.json'}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-4" placeholder="data/tallies.json">
+                        <div class="flex gap-2">
+                            <button onclick="saveGhSettingsFromForm()" class="flex-1 py-3 bg-slate-900 text-white font-semibold rounded-2xl text-sm">Save &amp; Connect</button>
+                            <button onclick="clearGhConfig(); document.getElementById('gh-settings-modal').remove(); showToast('GitHub sync disconnected');" class="px-4 py-3 border border-slate-300 rounded-2xl text-sm text-slate-600">Clear</button>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-3">Token stays only on this phone (localStorage). Use a private repo.</p>
+                    </div>
+                </div>`;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        async function saveGhSettingsFromForm() {
+            const owner = document.getElementById('gh-owner').value.trim();
+            const repo = document.getElementById('gh-repo').value.trim();
+            const token = document.getElementById('gh-token').value.trim();
+            const path = document.getElementById('gh-path').value.trim() || 'data/tallies.json';
+            if (!owner || !repo || !token) {
+                showToast('Owner, repo, and token are required', true);
+                return;
+            }
+            saveGhConfig({ owner, repo, token, path });
+            document.getElementById('gh-settings-modal')?.remove();
+            showToast('Connecting to GitHub…');
+            const ok = await initCloud();
+            if (ok) {
+                loadDate(currentDateStr);
+                showToast('GitHub sync connected');
             }
         }
 
@@ -1311,7 +1549,8 @@
             if (!confirm(`Delete the entry for ${formatDisplayDate(dateStr)}? This cannot be undone.`)) return;
             
             delete currentData[dateStr];
-            saveData();
+            saveDataLocal();
+            deleteDayFromCloud(dateStr);
             renderHistory();
             showToast('Entry deleted');
             
@@ -1948,6 +2187,12 @@
                 <div class="fixed inset-0 bg-black/40 z-[200] flex items-end" onclick="this.remove()">
                     <div class="bg-white w-full rounded-t-3xl p-2 shadow-2xl" onclick="event.stopImmediatePropagation()">
                         <div class="px-4 pt-3 pb-2 text-xs font-bold text-slate-500">MORE ACTIONS</div>
+
+                        <button onclick="document.querySelector('.fixed.inset-0').remove(); openGhSettings();" 
+                                class="w-full flex items-center gap-x-3 px-4 py-3.5 active:bg-slate-100 rounded-2xl text-left">
+                            <i class="fa-brands fa-github w-5 text-slate-700"></i>
+                            <span class="font-medium">GitHub Sync Settings</span>
+                        </button>
                         
                         <button onclick="importData(); document.querySelector('.fixed.inset-0').remove();" 
                                 class="w-full flex items-center gap-x-3 px-4 py-3.5 active:bg-slate-100 rounded-2xl text-left">
@@ -2027,6 +2272,16 @@
             
             // Load today's data (or create empty)
             loadDate(today);
+
+            // Try cloud (shared storage) — merge remote tallies then refresh UI
+            initCloud().then((ok) => {
+                if (ok) {
+                    loadDate(currentDateStr);
+                    if (!document.getElementById('history-view').classList.contains('hidden')) {
+                        renderHistory();
+                    }
+                }
+            });
             
             // Seed demo data if completely empty (first run)
             if (Object.keys(currentData).length === 0) {
