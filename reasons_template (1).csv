@@ -1,0 +1,26 @@
+Category,Short Label,Full Reason Text,Icon
+robotic,Communication error,"Communication loss with PLC / controller",fa-network-wired
+robotic,Electrical / control fault,"Electrical or control system issue",fa-bolt
+robotic,False positive detection,"False positive detection (foreign object or debris)",fa-eye
+robotic,Place / alignment error,"Robot arm place or alignment error",fa-crosshairs
+robotic,Safety interlock triggered,"Safety interlock or E-stop triggered",fa-shield-halved
+robotic,Sensor dirty or obstructed,"Sensor / camera dirty, obstructed, or damaged",fa-camera
+robotic,Software / logic fault,"Software or logic fault",fa-code
+robotic,Gripper failed to hold part,"Gripper failed to hold part",fa-hand
+robotic,Pick / alignment error,"Vision system pick or alignment error / detection failure",fa-robot
+tieplate,Bent or damaged plate,"Bent, damaged, or malformed tie plate",fa-wrench
+tieplate,Electrical / control fault,"Electrical or control system issue",fa-bolt
+tieplate,Flipper malfunction,"Flipper mechanism malfunction",fa-rotate
+tieplate,Mechanical misalignment,"Mechanical misalignment or wear",fa-arrows-up-down-left-right
+tieplate,Misfeed / improper seating,"Plate misfeed or improper seating in setter",fa-layer-group
+tieplate,Pneumatic issue,"Pneumatic pressure issue",fa-wind
+tieplate,Safety intervention required,"Safety intervention required",fa-shield-halved
+tieplate,Sensor failure,"Sensor failure on setter",fa-circle-exclamation
+tieplate,Vision detector miscalibrated,"Vision Tie Detector miscalibrated",fa-eye
+truck,Conveyor adjustment,"Conveyor adjustment needed",fa-bars-staggered
+truck,Electrical / control fault,"Electrical or control system issue",fa-bolt
+truck,Engine / power fault,"Engine, power, or drive system fault",fa-car-battery
+truck,Hydraulic leak / low pressure,"Hydraulic leak or low system pressure",fa-droplet
+truck,Loader magnet malfunction,"Loader magnet malfunction",fa-magnet
+truck,Mobility problem,"Tire, track, or mobility problem",fa-truck
+truck,Pneumatic issue,"Pneumatic pressure issue",fa-wind

@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: bb-tally-board
+    runtime: static
+    repo: https://github.com/cotycoots-tech/bb-tally-board
+    branch: main
+    staticPublishPath: .
+    pullRequestPreviewsEnabled: false
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff

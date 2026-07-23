@@ -1,0 +1,2142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="B&B Tally Board — Field Ops. Log human interventions on automated railway tie-plate systems.">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="B&B Tally">
+    <title>B&amp;B Tally Board • Field Ops</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+        
+        :root {
+            --primary: #0f172a;
+        }
+        
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        .font-display {
+            font-family: 'Space Grotesk', 'Inter', system_ui, sans-serif;
+            font-weight: 600;
+        }
+
+        .tally-number {
+            font-variant-numeric: tabular-nums;
+            transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .category-card {
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+        
+        .category-card:active {
+            transform: scale(0.985);
+        }
+
+        .big-button {
+            transition: all 0.05s ease;
+            user-select: none;
+        }
+        
+        .big-button:active {
+            transform: scale(0.94);
+            filter: brightness(0.95);
+        }
+
+        .nav-tab {
+            transition: all 0.1s ease;
+        }
+        
+        .nav-tab.active {
+            background-color: #0f172a;
+            color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .range-pill.active, .rfilter-pill.active {
+            background-color: #0f172a !important;
+            color: white !important;
+            border-color: #0f172a !important;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .history-row {
+            transition: background-color 0.1s ease;
+        }
+        
+        .history-row:hover {
+            background-color: #f8fafc;
+        }
+
+        .section-header {
+            font-size: 13px;
+            letter-spacing: -.5px;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        .tally-label {
+            font-weight: 700;
+            letter-spacing: -.25px;
+        }
+
+        .metric {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .print-only {
+            display: none;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            body {
+                background: white;
+            }
+            .category-card {
+                box-shadow: none;
+                border: 1px solid #e2e8f0;
+            }
+        }
+
+        .mobile-safe {
+            min-height: 44px;
+            min-width: 44px;
+        }
+
+        .data-table {
+            font-variant-numeric: tabular-nums;
+        }
+    </style>
+</head>
+<body class="bg-slate-100">
+    <!-- Header -->
+    <header class="bg-slate-900 text-white sticky top-0 z-50 no-print">
+        <div class="max-w-3xl mx-auto px-4">
+            <div class="flex items-center justify-between h-14">
+                <div class="flex items-center gap-x-3">
+                    <div class="w-9 h-9 bg-orange-500 rounded-2xl flex items-center justify-center shadow-inner">
+                        <i class="fa-solid fa-robot text-white text-2xl"></i>
+                    </div>
+                    <div>
+                        <span class="font-display text-2xl tracking-tighter font-semibold">B&amp;B</span>
+                        <span class="font-semibold text-xl tracking-tight">Tally</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-x-2 text-sm">
+                    <div class="hidden sm:flex items-center bg-slate-800 rounded-3xl px-3 py-1 text-xs">
+                        <i class="fa-solid fa-map-marker-alt mr-1.5 text-orange-400"></i>
+                        <span class="font-medium">Field Ops</span>
+                    </div>
+                    <button onclick="showMenu()" 
+                            class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white active:bg-slate-800 rounded-2xl transition-colors">
+                        <i class="fa-solid fa-ellipsis-v text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="max-w-3xl mx-auto px-4 pb-20">
+        
+        <!-- Date & Status Bar -->
+        <div class="pt-5 pb-3 flex items-end justify-between no-print">
+            <div>
+                <div class="flex items-center gap-x-2">
+                    <input type="date" id="current-date" 
+                           class="text-3xl font-semibold bg-transparent border-0 p-0 focus:outline-none focus:ring-0 text-slate-900 cursor-pointer"
+                           onchange="loadDate(this.value)">
+                    <button onclick="goToToday()" 
+                            class="px-3 py-1 text-xs font-medium bg-white shadow-sm border border-slate-200 text-slate-600 hover:bg-slate-50 active:bg-slate-100 rounded-2xl flex items-center gap-x-1.5 transition-colors">
+                        <i class="fa-solid fa-calendar-day text-orange-500"></i>
+                        <span class="font-semibold">Today</span>
+                    </button>
+                </div>
+                <div id="day-name" class="text-sm font-medium text-slate-500 pl-0.5"></div>
+            </div>
+            
+            <div class="text-right">
+                <div id="last-saved" 
+                     class="text-[10px] font-medium px-2.5 py-px rounded-2xl bg-emerald-100 text-emerald-700 inline-flex items-center gap-x-1">
+                    <i class="fa-solid fa-check-circle text-xs"></i>
+                    <span>Saved</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Unit in Operation -->
+        <div class="mb-4 no-print">
+            <label class="text-[10px] font-bold text-slate-500 tracking-wider block mb-1.5 pl-0.5">UNIT IN OPERATION</label>
+            <select id="unit-select" onchange="debouncedSave()"
+                    class="w-full text-base font-semibold border border-slate-300 focus:border-orange-400 bg-white rounded-2xl px-4 py-3 text-slate-900 shadow-sm">
+                <option value="">-- Select unit --</option>
+                <option value="Raiv-T1 / T-53">Raiv-T1 / T-53</option>
+                <option value="Raiv-T2 / T-57">Raiv-T2 / T-57</option>
+                <option value="Raiv-T3 / T-51">Raiv-T3 / T-51</option>
+            </select>
+        </div>
+
+        <!-- TALLY VIEW -->
+        <div id="tally-view">
+            
+            <!-- Quick Stats -->
+            <div class="flex items-center justify-between mb-3 px-1 no-print">
+                <div>
+                    <span class="section-header">TODAY'S INTERVENTIONS</span>
+                </div>
+                <div onclick="resetAllTallies()" 
+                     class="flex items-center text-xs font-medium text-slate-500 hover:text-red-600 active:text-red-700 cursor-pointer transition-colors">
+                    <i class="fa-solid fa-undo mr-1"></i>
+                    <span class="font-semibold">Reset all</span>
+                </div>
+            </div>
+
+            <!-- Three Category Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                
+                <!-- Robotic System -->
+                <div class="category-card bg-white border border-slate-200 rounded-3xl p-4 shadow-sm flex flex-col">
+                    <div class="flex items-start justify-between mb-1">
+                        <div>
+                            <div class="flex items-center gap-x-2">
+                                <i class="fa-solid fa-robot text-sky-600 text-xl"></i>
+                                <span class="tally-label text-lg text-slate-900">Robotic System</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 flex flex-col justify-center items-center py-2">
+                        <div id="robotic-count" 
+                             class="tally-number text-[72px] leading-none font-bold text-slate-900 tabular-nums tracking-tighter">0</div>
+                        <div class="text-xs text-slate-500 font-medium -mt-1">human involvements</div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-2 mt-auto pt-3">
+                        <button onclick="adjustTally('robotic', -1)"
+                                class="big-button mobile-safe flex items-center justify-center bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold text-2xl rounded-2xl border border-slate-200 active:scale-[0.96]">
+                            −
+                        </button>
+                        <button onclick="openReasonPicker('robotic')"
+                                class="big-button mobile-safe flex items-center justify-center bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-extrabold text-xl rounded-2xl shadow-sm active:scale-[0.96]">
+                            +1
+                        </button>
+                        <button onclick="resetTally('robotic')"
+                                class="big-button mobile-safe flex items-center justify-center text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 active:bg-slate-100 text-slate-600 rounded-2xl">
+                            <i class="fa-solid fa-undo mr-1 text-xs"></i> 0
+                        </button>
+                    </div>
+                    
+                    <details class="mt-3 group">
+                        <summary class="flex items-center justify-between cursor-pointer text-xs font-semibold text-slate-500 hover:text-slate-700 list-none">
+                            <span>Extra notes / detail</span>
+                            <i class="fa-solid fa-chevron-down text-[10px] group-open:rotate-180 transition-transform"></i>
+                        </summary>
+                        <textarea id="robotic-notes" rows="2"
+                                  class="mt-2 w-full text-sm border border-slate-200 focus:border-sky-300 rounded-2xl p-3 resize-y min-h-[60px] text-slate-700 placeholder:text-slate-400"
+                                  placeholder="Optional extra detail about interventions..."
+                                  oninput="debouncedSave()"></textarea>
+                    </details>
+                </div>
+                
+                <!-- Tie Plate Setter -->
+                <div class="category-card bg-white border border-slate-200 rounded-3xl p-4 shadow-sm flex flex-col">
+                    <div class="flex items-start justify-between mb-1">
+                        <div>
+                            <div class="flex items-center gap-x-2">
+                                <i class="fa-solid fa-wrench text-amber-600 text-xl"></i>
+                                <span class="tally-label text-lg text-slate-900">Tie Plate Setter</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 flex flex-col justify-center items-center py-2">
+                        <div id="tieplate-count" 
+                             class="tally-number text-[72px] leading-none font-bold text-slate-900 tabular-nums tracking-tighter">0</div>
+                        <div class="text-xs text-slate-500 font-medium -mt-1">human involvements</div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-2 mt-auto pt-3">
+                        <button onclick="adjustTally('tieplate', -1)"
+                                class="big-button mobile-safe flex items-center justify-center bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold text-2xl rounded-2xl border border-slate-200 active:scale-[0.96]">
+                            −
+                        </button>
+                        <button onclick="openReasonPicker('tieplate')"
+                                class="big-button mobile-safe flex items-center justify-center bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-extrabold text-xl rounded-2xl shadow-sm active:scale-[0.96]">
+                            +1
+                        </button>
+                        <button onclick="resetTally('tieplate')"
+                                class="big-button mobile-safe flex items-center justify-center text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 active:bg-slate-100 text-slate-600 rounded-2xl">
+                            <i class="fa-solid fa-undo mr-1 text-xs"></i> 0
+                        </button>
+                    </div>
+                    
+                    <details class="mt-3 group">
+                        <summary class="flex items-center justify-between cursor-pointer text-xs font-semibold text-slate-500 hover:text-slate-700 list-none">
+                            <span>Extra notes / detail</span>
+                            <i class="fa-solid fa-chevron-down text-[10px] group-open:rotate-180 transition-transform"></i>
+                        </summary>
+                        <textarea id="tieplate-notes" rows="2"
+                                  class="mt-2 w-full text-sm border border-slate-200 focus:border-amber-300 rounded-2xl p-3 resize-y min-h-[60px] text-slate-700 placeholder:text-slate-400"
+                                  placeholder="Optional extra detail about interventions..."
+                                  oninput="debouncedSave()"></textarea>
+                    </details>
+                </div>
+                
+                <!-- Truck Malfunction -->
+                <div class="category-card bg-white border border-slate-200 rounded-3xl p-4 shadow-sm flex flex-col">
+                    <div class="flex items-start justify-between mb-1">
+                        <div>
+                            <div class="flex items-center gap-x-2">
+                                <i class="fa-solid fa-truck text-red-600 text-xl"></i>
+                                <span class="tally-label text-lg text-slate-900">Truck Malfunction</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 flex flex-col justify-center items-center py-2">
+                        <div id="truck-count" 
+                             class="tally-number text-[72px] leading-none font-bold text-slate-900 tabular-nums tracking-tighter">0</div>
+                        <div class="text-xs text-slate-500 font-medium -mt-1">human involvements</div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-2 mt-auto pt-3">
+                        <button onclick="adjustTally('truck', -1)"
+                                class="big-button mobile-safe flex items-center justify-center bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold text-2xl rounded-2xl border border-slate-200 active:scale-[0.96]">
+                            −
+                        </button>
+                        <button onclick="openReasonPicker('truck')"
+                                class="big-button mobile-safe flex items-center justify-center bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-extrabold text-xl rounded-2xl shadow-sm active:scale-[0.96]">
+                            +1
+                        </button>
+                        <button onclick="resetTally('truck')"
+                                class="big-button mobile-safe flex items-center justify-center text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 active:bg-slate-100 text-slate-600 rounded-2xl">
+                            <i class="fa-solid fa-undo mr-1 text-xs"></i> 0
+                        </button>
+                    </div>
+                    
+                    <details class="mt-3 group">
+                        <summary class="flex items-center justify-between cursor-pointer text-xs font-semibold text-slate-500 hover:text-slate-700 list-none">
+                            <span>Extra notes / detail</span>
+                            <i class="fa-solid fa-chevron-down text-[10px] group-open:rotate-180 transition-transform"></i>
+                        </summary>
+                        <textarea id="truck-notes" rows="2"
+                                  class="mt-2 w-full text-sm border border-slate-200 focus:border-red-300 rounded-2xl p-3 resize-y min-h-[60px] text-slate-700 placeholder:text-slate-400"
+                                  placeholder="Optional extra detail about interventions..."
+                                  oninput="debouncedSave()"></textarea>
+                    </details>
+                </div>
+            </div>
+
+            <!-- Total Banner -->
+            <div class="mt-4 bg-white border border-slate-200 rounded-3xl px-5 py-3 flex items-center justify-between shadow-sm no-print">
+                <div class="flex items-center gap-x-3">
+                    <div class="text-sm">
+                        <span class="font-semibold text-slate-900">Total human interventions today</span>
+                    </div>
+                </div>
+                <div id="total-count" 
+                     class="text-4xl font-extrabold text-slate-900 tabular-nums tracking-tighter">0</div>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="mt-6 no-print">
+                <div class="flex items-center gap-x-2 px-1 mb-2">
+                    <i class="fa-solid fa-comments text-slate-400"></i>
+                    <span class="section-header">TALLY BOARD COMMENTS</span>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-5">
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5 tracking-wider">1. Do these situations seem unique or likely occur at other job locations?</label>
+                        <textarea id="comment-unique" rows="2" 
+                                  class="w-full text-sm border border-slate-200 focus:border-slate-400 rounded-2xl p-3 placeholder:text-slate-400"
+                                  placeholder="e.g. Similar issue seen at Site B last month..."
+                                  oninput="debouncedSave()"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5 tracking-wider">2. Did any of these situations feel unsafe to you or anyone else involved?</label>
+                        <textarea id="comment-unsafe" rows="2" 
+                                  class="w-full text-sm border border-slate-200 focus:border-slate-400 rounded-2xl p-3 placeholder:text-slate-400"
+                                  placeholder="e.g. No safety concerns. Operator had clear line of sight..."
+                                  oninput="debouncedSave()"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5 tracking-wider">3. Are there any new objects that should be recognized for the Robot to pick up?</label>
+                        <textarea id="comment-new" rows="2" 
+                                  class="w-full text-sm border border-slate-200 focus:border-slate-400 rounded-2xl p-3 placeholder:text-slate-400"
+                                  placeholder="e.g. New type of tie plate with different hole pattern..."
+                                  oninput="debouncedSave()"></textarea>
+                    </div>
+                    
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-5 grid grid-cols-2 gap-3 no-print">
+                <button onclick="saveCurrent(true)"
+                        class="flex items-center justify-center gap-x-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition-colors text-white font-semibold py-3.5 rounded-3xl text-sm shadow-sm">
+                    <i class="fa-solid fa-save"></i>
+                    <span>SAVE ENTRY</span>
+                </button>
+                
+                <button onclick="printCurrentDay()"
+                        class="flex items-center justify-center gap-x-2 bg-white border border-slate-300 hover:bg-slate-50 active:bg-slate-100 transition-colors text-slate-700 font-semibold py-3.5 rounded-3xl text-sm">
+                    <i class="fa-solid fa-print"></i>
+                    <span>PRINT REPORT</span>
+                </button>
+            </div>
+            
+        </div>
+
+        <!-- HISTORY VIEW -->
+        <div id="history-view" class="hidden">
+            <div class="flex items-center justify-between mb-4 px-1">
+                <div>
+                    <span class="section-header">HISTORY LOG</span>
+                    <span id="history-count" class="ml-2 text-xs font-medium bg-slate-200 text-slate-600 px-2 py-px rounded-2xl"></span>
+                </div>
+                <div class="flex items-center gap-x-2">
+                    <div class="relative">
+                        <input type="text" id="history-search" placeholder="Search dates or notes..." 
+                               oninput="filterHistory()"
+                               class="text-sm w-44 border border-slate-300 focus:border-slate-400 pl-8 py-1.5 rounded-3xl text-sm">
+                        <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="history-list" class="space-y-2">
+                <!-- Populated by JS -->
+            </div>
+            
+            <div class="mt-6 text-center">
+                <div class="flex flex-col sm:flex-row gap-2 justify-center">
+                    <button onclick="exportAllDataToExcel()" 
+                            class="text-xs font-semibold px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-3xl flex items-center gap-x-2 mx-auto shadow-sm">
+                        <i class="fa-solid fa-file-excel"></i>
+                        <span>Export to Excel</span>
+                    </button>
+                    <button onclick="exportAllData()" 
+                            class="text-xs font-medium px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 rounded-3xl flex items-center gap-x-2 mx-auto text-slate-600">
+                        <i class="fa-solid fa-code"></i>
+                        <span>Export JSON (backup)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- INSIGHTS VIEW -->
+        <div id="insights-view" class="hidden">
+            <!-- Header + Range selector -->
+            <div class="mb-4 px-1 flex items-center justify-between">
+                <span class="section-header">ANALYTICS DASHBOARD</span>
+                <button onclick="exportAnalytics()" 
+                        class="text-xs font-semibold px-3 py-1.5 bg-slate-900 text-white rounded-2xl flex items-center gap-x-1.5 active:scale-95 transition-transform">
+                    <i class="fa-solid fa-download text-[10px]"></i>
+                    <span>Export</span>
+                </button>
+            </div>
+
+            <!-- Date Range Pills -->
+            <div class="flex gap-2 mb-5 overflow-x-auto no-scrollbar pb-1">
+                <button onclick="setInsightsRange(7)" id="range-7" class="range-pill active flex-shrink-0 px-4 py-2 text-xs font-semibold rounded-2xl bg-slate-900 text-white">7 Days</button>
+                <button onclick="setInsightsRange(14)" id="range-14" class="range-pill flex-shrink-0 px-4 py-2 text-xs font-semibold rounded-2xl bg-white border border-slate-200 text-slate-600">14 Days</button>
+                <button onclick="setInsightsRange(30)" id="range-30" class="range-pill flex-shrink-0 px-4 py-2 text-xs font-semibold rounded-2xl bg-white border border-slate-200 text-slate-600">30 Days</button>
+                <button onclick="setInsightsRange('all')" id="range-all" class="range-pill flex-shrink-0 px-4 py-2 text-xs font-semibold rounded-2xl bg-white border border-slate-200 text-slate-600">All Time</button>
+            </div>
+            
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-2 gap-3 mb-5">
+                <div class="bg-white border border-slate-200 rounded-3xl p-4">
+                    <div class="text-[10px] font-bold text-slate-500 tracking-wider">DAYS LOGGED</div>
+                    <div id="insight-days" class="text-4xl font-extrabold text-slate-900 tabular-nums mt-1">—</div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-3xl p-4">
+                    <div class="text-[10px] font-bold text-slate-500 tracking-wider">TOTAL INTERVENTIONS</div>
+                    <div id="insight-total" class="text-4xl font-extrabold text-slate-900 tabular-nums mt-1">—</div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-3xl p-4">
+                    <div class="text-[10px] font-bold text-slate-500 tracking-wider">AVG PER DAY</div>
+                    <div id="insight-avg" class="text-4xl font-extrabold text-slate-900 tabular-nums mt-1">—</div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-3xl p-4">
+                    <div class="text-[10px] font-bold text-slate-500 tracking-wider">TOP CATEGORY</div>
+                    <div id="insight-top-cat" class="text-lg font-bold text-slate-900 mt-1.5 leading-tight">—</div>
+                    <div id="insight-top-cat-count" class="text-xs text-slate-500 mt-0.5"></div>
+                </div>
+            </div>
+            
+            <!-- Trend Chart -->
+            <div class="bg-white border border-slate-200 rounded-3xl p-5 mb-5">
+                <div class="flex justify-between items-baseline mb-3">
+                    <div class="text-sm font-bold" id="trend-title">Trend</div>
+                    <div class="text-[10px] text-slate-500">Interventions per day</div>
+                </div>
+                <div class="relative" style="height:140px">
+                    <canvas id="trend-chart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Category Breakdown -->
+            <div class="bg-white border border-slate-200 rounded-3xl p-5 mb-5">
+                <div class="text-sm font-bold mb-4">Category Breakdown</div>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center gap-x-2">
+                                <i class="fa-solid fa-robot text-sky-600 w-4"></i>
+                                <span class="text-sm font-medium">Robotic System</span>
+                            </div>
+                            <div class="flex items-baseline gap-x-1.5">
+                                <span id="insight-robotic" class="font-extrabold text-xl tabular-nums">—</span>
+                                <span id="insight-robotic-pct" class="text-xs text-slate-500"></span>
+                            </div>
+                        </div>
+                        <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div id="insight-robotic-bar" class="h-full bg-sky-500 rounded-full transition-all duration-300" style="width:0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center gap-x-2">
+                                <i class="fa-solid fa-wrench text-amber-600 w-4"></i>
+                                <span class="text-sm font-medium">Tie Plate Setter</span>
+                            </div>
+                            <div class="flex items-baseline gap-x-1.5">
+                                <span id="insight-tieplate" class="font-extrabold text-xl tabular-nums">—</span>
+                                <span id="insight-tieplate-pct" class="text-xs text-slate-500"></span>
+                            </div>
+                        </div>
+                        <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div id="insight-tieplate-bar" class="h-full bg-amber-500 rounded-full transition-all duration-300" style="width:0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center gap-x-2">
+                                <i class="fa-solid fa-truck text-red-600 w-4"></i>
+                                <span class="text-sm font-medium">Truck Malfunction</span>
+                            </div>
+                            <div class="flex items-baseline gap-x-1.5">
+                                <span id="insight-truck" class="font-extrabold text-xl tabular-nums">—</span>
+                                <span id="insight-truck-pct" class="text-xs text-slate-500"></span>
+                            </div>
+                        </div>
+                        <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div id="insight-truck-bar" class="h-full bg-red-500 rounded-full transition-all duration-300" style="width:0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Reasons with category filter -->
+            <div class="bg-white border border-slate-200 rounded-3xl p-5 mb-5">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="text-sm font-bold">Top Reasons</div>
+                    <div class="text-[10px] text-slate-500" id="reasons-range-label">Selected range</div>
+                </div>
+                
+                <!-- Category filter chips -->
+                <div class="flex gap-1.5 mb-4 overflow-x-auto no-scrollbar">
+                    <button onclick="setReasonFilter('all')" id="rfilter-all" class="rfilter-pill active flex-shrink-0 px-3 py-1 text-[11px] font-semibold rounded-full bg-slate-900 text-white">All</button>
+                    <button onclick="setReasonFilter('robotic')" id="rfilter-robotic" class="rfilter-pill flex-shrink-0 px-3 py-1 text-[11px] font-semibold rounded-full bg-white border border-slate-200 text-slate-600">Robotic</button>
+                    <button onclick="setReasonFilter('tieplate')" id="rfilter-tieplate" class="rfilter-pill flex-shrink-0 px-3 py-1 text-[11px] font-semibold rounded-full bg-white border border-slate-200 text-slate-600">Tie Plate</button>
+                    <button onclick="setReasonFilter('truck')" id="rfilter-truck" class="rfilter-pill flex-shrink-0 px-3 py-1 text-[11px] font-semibold rounded-full bg-white border border-slate-200 text-slate-600">Truck</button>
+                </div>
+                
+                <div id="insight-reasons" class="space-y-3">
+                    <div class="text-sm text-slate-400 text-center py-4">No reasons recorded yet.<br>Select a reason when you tap +1.</div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 no-print">
+        <div class="max-w-3xl mx-auto grid grid-cols-3 text-center">
+            <button onclick="switchView('tally')" id="nav-tally"
+                    class="nav-tab active flex flex-col items-center justify-center py-3 text-xs font-semibold text-slate-900">
+                <i class="fa-solid fa-clipboard-list text-xl mb-0.5"></i>
+                <span>TALLY</span>
+            </button>
+            <button onclick="switchView('history')" id="nav-history"
+                    class="nav-tab flex flex-col items-center justify-center py-3 text-xs font-semibold text-slate-500 hover:text-slate-700">
+                <i class="fa-solid fa-history text-xl mb-0.5"></i>
+                <span>HISTORY</span>
+            </button>
+            <button onclick="switchView('insights')" id="nav-insights"
+                    class="nav-tab flex flex-col items-center justify-center py-3 text-xs font-semibold text-slate-500 hover:text-slate-700">
+                <i class="fa-solid fa-chart-line text-xl mb-0.5"></i>
+                <span>INSIGHTS</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Reason Picker Modal (bottom sheet) -->
+    <div id="reason-modal" class="fixed inset-0 z-[90] hidden">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/50" onclick="closeReasonPicker()"></div>
+        
+        <!-- Sheet -->
+        <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col safe-bottom">
+            <!-- Handle + Header -->
+            <div class="flex-shrink-0 pt-3 pb-2 px-5">
+                <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-3"></div>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-[10px] font-bold text-slate-400 tracking-wider">SELECT REASON</div>
+                        <div id="reason-modal-title" class="text-lg font-bold text-slate-900">Robotic System</div>
+                    </div>
+                    <button onclick="closeReasonPicker()" 
+                            class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:bg-slate-200">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Scrollable reason list -->
+            <div id="reason-modal-list" class="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
+                <!-- Populated by JS -->
+            </div>
+            
+            <!-- Custom reason area (hidden by default) -->
+            <div id="reason-custom-area" class="hidden flex-shrink-0 border-t border-slate-200 px-4 py-3 bg-slate-50">
+                <label class="text-xs font-semibold text-slate-600 mb-1.5 block">Type custom reason</label>
+                <div class="flex gap-2">
+                    <input type="text" id="reason-custom-input" 
+                           class="flex-1 text-sm border border-slate-300 focus:border-orange-400 rounded-2xl px-3 py-2.5"
+                           placeholder="Describe what happened..."
+                           onkeydown="if(event.key==='Enter'){ confirmCustomReason(); }">
+                    <button onclick="confirmCustomReason()"
+                            class="px-4 py-2.5 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-semibold text-sm rounded-2xl">
+                        Add
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Safe area padding for phones -->
+            <div class="h-6 flex-shrink-0"></div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-[100] hidden">
+        <div class="bg-slate-900 text-white text-sm px-5 py-2.5 rounded-3xl shadow-xl flex items-center gap-x-2">
+            <span id="toast-message"></span>
+        </div>
+    </div>
+
+    <script>
+        // Tailwind script
+        function initializeTailwind() {
+            document.documentElement.style.setProperty('--accent', '#0ea5e9');
+        }
+        
+        // Data storage
+        const STORAGE_KEY = 'bb_tallyboard_v1';
+        const CUSTOM_REASONS_KEY = 'bb_tally_custom_reasons_v1';
+        let currentData = {};
+        let currentDateStr = '';
+        let chartInstance = null;
+        let saveTimeout = null;
+        let customReasons = { robotic: [], tieplate: [], truck: [] };
+        let insightsRange = 7;          // 7 | 14 | 30 | 'all'
+        let reasonFilter = 'all';        // 'all' | 'robotic' | 'tieplate' | 'truck'
+
+        // Default reason options (short label shown in dropdown, full text stored)
+        const DEFAULT_REASONS = {
+            robotic: [
+                { label: 'Communication error', value: 'Communication loss with PLC / controller', icon: 'fa-network-wired' },
+                { label: 'Electrical / control fault', value: 'Electrical or control system issue', icon: 'fa-bolt' },
+                { label: 'False positive detection', value: 'False positive detection (foreign object or debris)', icon: 'fa-eye' },
+                { label: 'Place / alignment error', value: 'Robot arm place or alignment error', icon: 'fa-crosshairs' },
+                { label: 'Safety interlock triggered', value: 'Safety interlock or E-stop triggered', icon: 'fa-shield-halved' },
+                { label: 'Sensor dirty or obstructed', value: 'Sensor / camera dirty, obstructed, or damaged', icon: 'fa-camera' },
+                { label: 'Software / logic fault', value: 'Software or logic fault', icon: 'fa-code' },
+                { label: 'Gripper failed to hold part', value: 'Gripper failed to hold part', icon: 'fa-hand' },
+                { label: 'Pick / alignment error', value: 'Vision system pick or alignment error / detection failure', icon: 'fa-robot' }
+            ],
+            tieplate: [
+                { label: 'Bent or damaged plate', value: 'Bent, damaged, or malformed tie plate', icon: 'fa-wrench' },
+                { label: 'Electrical / control fault', value: 'Electrical or control system issue', icon: 'fa-bolt' },
+                { label: 'Flipper malfunction', value: 'Flipper mechanism malfunction', icon: 'fa-rotate' },
+                { label: 'Mechanical misalignment', value: 'Mechanical misalignment or wear', icon: 'fa-arrows-up-down-left-right' },
+                { label: 'Misfeed / improper seating', value: 'Plate misfeed or improper seating in setter', icon: 'fa-layer-group' },
+                { label: 'Pneumatic issue', value: 'Pneumatic pressure issue', icon: 'fa-wind' },
+                { label: 'Safety intervention required', value: 'Safety intervention required', icon: 'fa-shield-halved' },
+                { label: 'Sensor failure', value: 'Sensor failure on setter', icon: 'fa-circle-exclamation' },
+                { label: 'Vision detector miscalibrated', value: 'Vision Tie Detector miscalibrated', icon: 'fa-eye' }
+            ],
+            truck: [
+                { label: 'Conveyor adjustment', value: 'Conveyor adjustment needed', icon: 'fa-bars-staggered' },
+                { label: 'Electrical / control fault', value: 'Electrical or control system issue', icon: 'fa-bolt' },
+                { label: 'Engine / power fault', value: 'Engine, power, or drive system fault', icon: 'fa-car-battery' },
+                { label: 'Hydraulic leak / low pressure', value: 'Hydraulic leak or low system pressure', icon: 'fa-droplet' },
+                { label: 'Loader magnet malfunction', value: 'Loader magnet malfunction', icon: 'fa-magnet' },
+                { label: 'Mobility problem', value: 'Tire, track, or mobility problem', icon: 'fa-truck' },
+                { label: 'Pneumatic issue', value: 'Pneumatic pressure issue', icon: 'fa-wind' }
+            ]
+        };
+        let persistenceAvailable = true; // will be set false in restricted environments (sandbox, private mode, etc.)
+
+        // Test whether localStorage is usable in the current context
+        function testLocalStorage() {
+            try {
+                const testKey = '__bb_tally_test__';
+                localStorage.setItem(testKey, 'ok');
+                localStorage.removeItem(testKey);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+        
+        // Load data from localStorage (or stay empty if unavailable)
+        function loadData() {
+            if (!persistenceAvailable) {
+                currentData = {};
+                return;
+            }
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                currentData = saved ? JSON.parse(saved) : {};
+            } catch (e) {
+                console.warn('localStorage unavailable – running in memory-only mode', e);
+                persistenceAvailable = false;
+                currentData = {};
+            }
+        }
+        
+        // Save all data to localStorage (no-op if unavailable)
+        function saveData() {
+            if (!persistenceAvailable) return;
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(currentData));
+            } catch (e) {
+                console.warn('Failed to write localStorage', e);
+                persistenceAvailable = false;
+                showRestrictedBanner();
+            }
+        }
+
+        // ---------- Custom Reasons Persistence ----------
+        function loadCustomReasons() {
+            try {
+                const saved = localStorage.getItem(CUSTOM_REASONS_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    customReasons = {
+                        robotic: Array.isArray(parsed.robotic) ? parsed.robotic : [],
+                        tieplate: Array.isArray(parsed.tieplate) ? parsed.tieplate : [],
+                        truck: Array.isArray(parsed.truck) ? parsed.truck : []
+                    };
+                }
+            } catch (e) {
+                customReasons = { robotic: [], tieplate: [], truck: [] };
+            }
+        }
+
+        function saveCustomReasons() {
+            try {
+                localStorage.setItem(CUSTOM_REASONS_KEY, JSON.stringify(customReasons));
+            } catch (e) {
+                console.warn('Could not persist custom reasons', e);
+            }
+        }
+
+        function addCustomReason(category, text) {
+            const clean = (text || '').trim();
+            if (!clean || clean.length < 3) return false;
+
+            // Avoid duplicates (case-insensitive)
+            const existing = customReasons[category] || [];
+            const lower = clean.toLowerCase();
+            if (existing.some(r => r.toLowerCase() === lower)) return false;
+
+            // Also skip if it matches a default
+            const defaults = DEFAULT_REASONS[category] || [];
+            if (defaults.some(d => d.value.toLowerCase() === lower || d.label.toLowerCase() === lower)) return false;
+
+            customReasons[category] = [...existing, clean];
+            saveCustomReasons();
+            return true;
+        }
+
+        // Kept for compatibility – modal rebuilds its list on every open
+        function rebuildReasonSelect(category) { /* no-op */ }
+        function rebuildAllReasonSelects() { /* no-op */ }
+        
+        // Get today's date string YYYY-MM-DD
+        function getTodayStr() {
+            const d = new Date();
+            return d.toISOString().split('T')[0];
+        }
+        
+        // Format date nicely for display
+        function formatDisplayDate(dateStr) {
+            const date = new Date(dateStr + 'T00:00:00');
+            return date.toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric',
+                year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+            });
+        }
+        
+        // Update the day name display
+        function updateDayName(dateStr) {
+            const date = new Date(dateStr + 'T00:00:00');
+            const dayEl = document.getElementById('day-name');
+            dayEl.textContent = date.toLocaleDateString('en-US', { weekday: 'long' });
+        }
+        
+        // Load a specific date into the form
+        function loadDate(dateStr) {
+            currentDateStr = dateStr;
+            document.getElementById('current-date').value = dateStr;
+            updateDayName(dateStr);
+            
+            const entry = currentData[dateStr] || {
+                unit: '',
+                tallies: { robotic: 0, tieplate: 0, truck: 0 },
+                notes: { robotic: '', tieplate: '', truck: '' },
+                reasons: { robotic: [], tieplate: [], truck: [] },
+                comments: { unique: '', unsafe: '', new: '' },
+                last_updated: null
+            };
+            
+            // Ensure reasons structure exists even on older entries
+            if (!entry.reasons) {
+                entry.reasons = { robotic: [], tieplate: [], truck: [] };
+            }
+            
+            // Populate unit
+            const unitSelect = document.getElementById('unit-select');
+            if (unitSelect) unitSelect.value = entry.unit || '';
+            
+            // Populate tallies
+            document.getElementById('robotic-count').textContent = entry.tallies.robotic || 0;
+            document.getElementById('tieplate-count').textContent = entry.tallies.tieplate || 0;
+            document.getElementById('truck-count').textContent = entry.tallies.truck || 0;
+            
+            // Populate notes
+            document.getElementById('robotic-notes').value = entry.notes.robotic || '';
+            document.getElementById('tieplate-notes').value = entry.notes.tieplate || '';
+            document.getElementById('truck-notes').value = entry.notes.truck || '';
+            
+            // Populate comments
+            document.getElementById('comment-unique').value = entry.comments.unique || '';
+            document.getElementById('comment-unsafe').value = entry.comments.unsafe || '';
+            document.getElementById('comment-new').value = entry.comments.new || '';
+            
+            updateTotalCount();
+            updateLastSaved(entry.last_updated);
+        }
+        
+        // Update total count display
+        function updateTotalCount() {
+            const r = parseInt(document.getElementById('robotic-count').textContent) || 0;
+            const t = parseInt(document.getElementById('tieplate-count').textContent) || 0;
+            const u = parseInt(document.getElementById('truck-count').textContent) || 0;
+            document.getElementById('total-count').textContent = r + t + u;
+        }
+        
+        // Update last saved indicator
+        function updateLastSaved(timestamp) {
+            const el = document.getElementById('last-saved');
+            if (!timestamp) {
+                el.innerHTML = `<i class="fa-solid fa-circle text-amber-500 mr-1"></i><span>Not saved yet</span>`;
+                el.className = `text-[10px] font-medium px-2.5 py-px rounded-2xl bg-amber-100 text-amber-700 inline-flex items-center gap-x-1`;
+                return;
+            }
+            
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diffMin = Math.floor((now - date) / 1000 / 60);
+            
+            let text = '';
+            if (diffMin < 1) text = 'Just now';
+            else if (diffMin < 60) text = `${diffMin}m ago`;
+            else text = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            
+            el.innerHTML = `<i class="fa-solid fa-check-circle text-emerald-600 mr-1"></i><span>Saved ${text}</span>`;
+            el.className = `text-[10px] font-medium px-2.5 py-px rounded-2xl bg-emerald-100 text-emerald-700 inline-flex items-center gap-x-1`;
+        }
+        
+        // ========== REASON PICKER MODAL ==========
+        let currentPickerCategory = null;
+
+        function openReasonPicker(category) {
+            currentPickerCategory = category;
+            
+            const titles = {
+                robotic: 'Robotic System',
+                tieplate: 'Tie Plate Setter',
+                truck: 'Truck Malfunction'
+            };
+            document.getElementById('reason-modal-title').textContent = titles[category] || category;
+            
+            // Build the list of options
+            const listEl = document.getElementById('reason-modal-list');
+            listEl.innerHTML = '';
+            
+            // Default reasons — each with its own icon
+            const catColors = {
+                robotic: { bg: 'bg-sky-100', icon: 'text-sky-600' },
+                tieplate: { bg: 'bg-amber-100', icon: 'text-amber-600' },
+                truck: { bg: 'bg-red-100', icon: 'text-red-600' }
+            };
+            const colors = catColors[category] || { bg: 'bg-slate-100', icon: 'text-slate-500' };
+            
+            (DEFAULT_REASONS[category] || []).forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full text-left px-4 py-3.5 bg-white border border-slate-200 rounded-2xl active:bg-slate-50 active:scale-[0.98] transition-all flex items-center gap-3';
+                const iconClass = item.icon || 'fa-circle';
+                btn.innerHTML = `
+                    <div class="w-8 h-8 rounded-full ${colors.bg} flex items-center justify-center flex-shrink-0">
+                        <i class="fa-solid ${iconClass} ${colors.icon} text-sm"></i>
+                    </div>
+                    <span class="text-sm font-medium text-slate-800 leading-snug">${item.label}</span>
+                `;
+                btn.onclick = () => selectReason(item.value);
+                listEl.appendChild(btn);
+            });
+            
+            // Custom reasons (if any)
+            const customs = customReasons[category] || [];
+            if (customs.length > 0) {
+                const header = document.createElement('div');
+                header.className = 'text-[10px] font-bold text-slate-400 tracking-wider pt-3 pb-1 px-1';
+                header.textContent = 'YOUR CUSTOM REASONS';
+                listEl.appendChild(header);
+                
+                customs.forEach(txt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'w-full text-left px-4 py-3.5 bg-orange-50 border border-orange-200 rounded-2xl active:bg-orange-100 active:scale-[0.98] transition-all flex items-center gap-3';
+                    const short = txt.length > 60 ? txt.slice(0, 57) + '…' : txt;
+                    btn.innerHTML = `
+                        <div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                            <i class="fa-solid fa-star text-orange-500 text-sm"></i>
+                        </div>
+                        <span class="text-sm font-medium text-slate-800 leading-snug">${short}</span>
+                    `;
+                    btn.onclick = () => selectReason(txt);
+                    listEl.appendChild(btn);
+                });
+            }
+            
+            // Other / Custom option
+            const otherBtn = document.createElement('button');
+            otherBtn.className = 'w-full text-left px-4 py-3.5 bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl active:bg-slate-100 active:scale-[0.98] transition-all flex items-center gap-3 mt-2';
+            otherBtn.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-pen text-slate-600 text-sm"></i>
+                </div>
+                <span class="text-sm font-semibold text-slate-700">Other / Type a new reason…</span>
+            `;
+            otherBtn.onclick = () => showCustomInput();
+            listEl.appendChild(otherBtn);
+            
+            // Reset custom area
+            document.getElementById('reason-custom-area').classList.add('hidden');
+            document.getElementById('reason-custom-input').value = '';
+            
+            // Show modal
+            const modal = document.getElementById('reason-modal');
+            modal.classList.remove('hidden');
+            // Prevent body scroll while open
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeReasonPicker() {
+            document.getElementById('reason-modal').classList.add('hidden');
+            document.getElementById('reason-custom-area').classList.add('hidden');
+            document.body.style.overflow = '';
+            currentPickerCategory = null;
+        }
+
+        function showCustomInput() {
+            const area = document.getElementById('reason-custom-area');
+            area.classList.remove('hidden');
+            const input = document.getElementById('reason-custom-input');
+            input.value = '';
+            setTimeout(() => input.focus(), 100);
+            // Scroll the custom area into view
+            area.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+
+        function selectReason(reasonText) {
+            if (!currentPickerCategory || !reasonText) return;
+            
+            const category = currentPickerCategory;
+            
+            // Record the reason + increment
+            recordTallyWithReason(category, reasonText);
+            
+            closeReasonPicker();
+            
+            // Brief haptic
+            if (navigator.vibrate) navigator.vibrate(20);
+        }
+
+        function confirmCustomReason() {
+            const input = document.getElementById('reason-custom-input');
+            const text = (input.value || '').trim();
+            if (!text || text.length < 2) {
+                showToast('Please type a reason', true);
+                input.focus();
+                return;
+            }
+            
+            const category = currentPickerCategory;
+            if (!category) return;
+            
+            // Save as persistent custom if new
+            if (addCustomReason(category, text)) {
+                showToast('Custom reason saved');
+            }
+            
+            selectReason(text);
+        }
+
+        // Core function: increment + log reason + update notes
+        function recordTallyWithReason(category, reasonText) {
+            const countEl = document.getElementById(`${category}-count`);
+            let current = parseInt(countEl.textContent) || 0;
+            current += 1;
+            countEl.textContent = current;
+            
+            // Append to notes if not already present
+            const notesEl = document.getElementById(`${category}-notes`);
+            if (notesEl) {
+                const currentNotes = notesEl.value.trim();
+                if (currentNotes.length === 0) {
+                    notesEl.value = reasonText;
+                } else if (!currentNotes.includes(reasonText)) {
+                    const separator = (currentNotes.endsWith('.') || currentNotes.endsWith('!') || currentNotes.endsWith('?')) ? ' ' : '. ';
+                    notesEl.value = currentNotes + separator + reasonText;
+                }
+            }
+            
+            // Push into structured reasons array
+            ensureReasonsArray(category);
+            const entry = currentData[currentDateStr];
+            if (entry && entry.reasons) {
+                entry.reasons[category].push(reasonText);
+            }
+            
+            updateTotalCount();
+            debouncedSave();
+        }
+
+        // Simple count adjuster (used by − and Reset buttons)
+        function adjustTally(category, delta) {
+            const countEl = document.getElementById(`${category}-count`);
+            let current = parseInt(countEl.textContent) || 0;
+            current = Math.max(0, current + delta);
+            countEl.textContent = current;
+            
+            updateTotalCount();
+            debouncedSave();
+            
+            if (navigator.vibrate) {
+                navigator.vibrate(delta > 0 ? 15 : 10);
+            }
+        }
+
+        // Ensure the current day's entry has a reasons object with arrays
+        function ensureReasonsArray(category) {
+            if (!currentDateStr) return;
+            if (!currentData[currentDateStr]) {
+                const unitSelect = document.getElementById('unit-select');
+                currentData[currentDateStr] = {
+                    unit: unitSelect ? unitSelect.value : '',
+                    tallies: { robotic: 0, tieplate: 0, truck: 0 },
+                    notes: { robotic: '', tieplate: '', truck: '' },
+                    reasons: { robotic: [], tieplate: [], truck: [] },
+                    comments: { unique: '', unsafe: '', new: '' },
+                    last_updated: null
+                };
+            }
+            const entry = currentData[currentDateStr];
+            if (!entry.reasons) {
+                entry.reasons = { robotic: [], tieplate: [], truck: [] };
+            }
+            if (!Array.isArray(entry.reasons[category])) {
+                entry.reasons[category] = [];
+            }
+        }
+        
+        // Reset single tally
+        function resetTally(category) {
+            const countEl = document.getElementById(`${category}-count`);
+            countEl.textContent = '0';
+            updateTotalCount();
+            debouncedSave();
+        }
+        
+        // Reset all tallies for current day
+        function resetAllTallies() {
+            if (!confirm('Reset all tallies for today to zero?')) return;
+            
+            document.getElementById('robotic-count').textContent = '0';
+            document.getElementById('tieplate-count').textContent = '0';
+            document.getElementById('truck-count').textContent = '0';
+            updateTotalCount();
+            debouncedSave();
+        }
+        
+        // Debounced save (for text inputs)
+        function debouncedSave() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                saveCurrent();
+            }, 600);
+        }
+        
+        // Save current form state
+        function saveCurrent(showToastMsg = false) {
+            if (!currentDateStr) return;
+            
+            // Preserve any structured reasons already accumulated today
+            const existingReasons = (currentData[currentDateStr] && currentData[currentDateStr].reasons)
+                ? currentData[currentDateStr].reasons
+                : { robotic: [], tieplate: [], truck: [] };
+            
+            const unitSelect = document.getElementById('unit-select');
+            const entry = {
+                unit: unitSelect ? unitSelect.value : '',
+                tallies: {
+                    robotic: parseInt(document.getElementById('robotic-count').textContent) || 0,
+                    tieplate: parseInt(document.getElementById('tieplate-count').textContent) || 0,
+                    truck: parseInt(document.getElementById('truck-count').textContent) || 0
+                },
+                notes: {
+                    robotic: document.getElementById('robotic-notes').value.trim(),
+                    tieplate: document.getElementById('tieplate-notes').value.trim(),
+                    truck: document.getElementById('truck-notes').value.trim()
+                },
+                reasons: existingReasons,
+                comments: {
+                    unique: document.getElementById('comment-unique').value.trim(),
+                    unsafe: document.getElementById('comment-unsafe').value.trim(),
+                    new: document.getElementById('comment-new').value.trim()
+                },
+                last_updated: new Date().toISOString()
+            };
+            
+            currentData[currentDateStr] = entry;
+            saveData();
+            updateLastSaved(entry.last_updated);
+            
+            if (showToastMsg) {
+                showToast('Entry saved successfully');
+            }
+            
+            // Refresh history if visible
+            if (!document.getElementById('history-view').classList.contains('hidden')) {
+                renderHistory();
+            }
+        }
+        
+        // Show toast notification
+        function showToast(message, isError = false) {
+            const container = document.getElementById('toast-container');
+            const msgEl = document.getElementById('toast-message');
+            
+            msgEl.textContent = message;
+            container.className = `fixed bottom-20 left-1/2 -translate-x-1/2 z-[100] flex`;
+            
+            if (isError) {
+                container.firstElementChild.className = 'bg-red-600 text-white text-sm px-5 py-2.5 rounded-3xl shadow-xl flex items-center gap-x-2';
+            } else {
+                container.firstElementChild.className = 'bg-slate-900 text-white text-sm px-5 py-2.5 rounded-3xl shadow-xl flex items-center gap-x-2';
+            }
+            
+            setTimeout(() => {
+                container.classList.add('hidden');
+            }, 2200);
+        }
+        
+        // Switch between main views
+        function switchView(view) {
+            // Hide all
+            document.getElementById('tally-view').classList.add('hidden');
+            document.getElementById('history-view').classList.add('hidden');
+            document.getElementById('insights-view').classList.add('hidden');
+            
+            // Deactivate all nav
+            document.getElementById('nav-tally').classList.remove('active', 'text-slate-900');
+            document.getElementById('nav-tally').classList.add('text-slate-500');
+            document.getElementById('nav-history').classList.remove('active', 'text-slate-900');
+            document.getElementById('nav-history').classList.add('text-slate-500');
+            document.getElementById('nav-insights').classList.remove('active', 'text-slate-900');
+            document.getElementById('nav-insights').classList.add('text-slate-500');
+            
+            if (view === 'tally') {
+                document.getElementById('tally-view').classList.remove('hidden');
+                document.getElementById('nav-tally').classList.add('active', 'text-slate-900');
+                document.getElementById('nav-tally').classList.remove('text-slate-500');
+            } else if (view === 'history') {
+                document.getElementById('history-view').classList.remove('hidden');
+                document.getElementById('nav-history').classList.add('active', 'text-slate-900');
+                document.getElementById('nav-history').classList.remove('text-slate-500');
+                renderHistory();
+            } else if (view === 'insights') {
+                document.getElementById('insights-view').classList.remove('hidden');
+                document.getElementById('nav-insights').classList.add('active', 'text-slate-900');
+                document.getElementById('nav-insights').classList.remove('text-slate-500');
+                renderInsights();
+            }
+        }
+        
+        // Render history list
+        function renderHistory(filteredData = null) {
+            const container = document.getElementById('history-list');
+            container.innerHTML = '';
+            
+            const dataToShow = filteredData || currentData;
+            const sortedDates = Object.keys(dataToShow).sort().reverse();
+            
+            document.getElementById('history-count').textContent = `${sortedDates.length} days`;
+            
+            if (sortedDates.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-400">
+                        <i class="fa-solid fa-inbox text-3xl mb-3"></i>
+                        <p class="text-sm">No entries yet.<br>Start logging on the Tally tab.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            sortedDates.forEach(dateStr => {
+                const entry = dataToShow[dateStr];
+                const total = (entry.tallies.robotic || 0) + (entry.tallies.tieplate || 0) + (entry.tallies.truck || 0);
+                
+                const row = document.createElement('div');
+                row.className = `history-row bg-white border border-slate-200 rounded-3xl px-4 py-3 flex items-center cursor-pointer active:bg-slate-50`;
+                
+                const unitLabel = entry.unit ? `<span class="ml-2 text-[11px] font-medium px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full">${entry.unit}</span>` : '';
+                
+                row.innerHTML = `
+                    <div class="flex-1 min-w-0" onclick="loadHistoryEntry('${dateStr}')">
+                        <div class="flex items-baseline justify-between">
+                            <div class="flex items-center flex-wrap gap-y-1">
+                                <span class="font-semibold text-slate-900">${formatDisplayDate(dateStr)}</span>
+                                ${unitLabel}
+                            </div>
+                            <div class="text-right">
+                                <span class="font-extrabold text-xl tabular-nums text-slate-900">${total}</span>
+                                <span class="text-xs text-slate-500 ml-0.5">total</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-x-3 mt-1 text-xs">
+                            <div class="flex items-center gap-x-1 text-sky-700">
+                                <i class="fa-solid fa-robot text-xs"></i>
+                                <span class="font-mono font-bold">${entry.tallies.robotic || 0}</span>
+                            </div>
+                            <div class="flex items-center gap-x-1 text-amber-700">
+                                <i class="fa-solid fa-wrench text-xs"></i>
+                                <span class="font-mono font-bold">${entry.tallies.tieplate || 0}</span>
+                            </div>
+                            <div class="flex items-center gap-x-1 text-red-700">
+                                <i class="fa-solid fa-truck text-xs"></i>
+                                <span class="font-mono font-bold">${entry.tallies.truck || 0}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="pl-3 flex flex-col items-end gap-y-1">
+                        <button onclick="event.stopImmediatePropagation(); deleteEntry('${dateStr}');" 
+                                class="text-red-400 hover:text-red-600 p-1 active:scale-90 transition-transform">
+                            <i class="fa-solid fa-trash text-sm"></i>
+                        </button>
+                    </div>
+                `;
+                
+                container.appendChild(row);
+            });
+        }
+        
+        // Load entry from history into form
+        function loadHistoryEntry(dateStr) {
+            loadDate(dateStr);
+            switchView('tally');
+            
+            // Show subtle indicator that we're editing history
+            setTimeout(() => {
+                const banner = document.createElement('div');
+                banner.className = `text-[10px] bg-amber-100 text-amber-700 px-3 py-1 rounded-2xl inline-flex items-center gap-x-1 mx-auto mb-2`;
+                banner.innerHTML = `<i class="fa-solid fa-edit text-xs"></i> <span>Editing historical entry</span>`;
+                
+                const tallyView = document.getElementById('tally-view');
+                tallyView.insertBefore(banner, tallyView.firstChild);
+                
+                setTimeout(() => {
+                    if (banner.parentNode) banner.parentNode.removeChild(banner);
+                }, 2800);
+            }, 350);
+        }
+        
+        // Delete a history entry
+        function deleteEntry(dateStr) {
+            if (!confirm(`Delete the entry for ${formatDisplayDate(dateStr)}? This cannot be undone.`)) return;
+            
+            delete currentData[dateStr];
+            saveData();
+            renderHistory();
+            showToast('Entry deleted');
+            
+            // If we deleted the current day, reset to today
+            if (dateStr === currentDateStr) {
+                goToToday();
+            }
+        }
+        
+        // Filter history list
+        function filterHistory() {
+            const term = document.getElementById('history-search').value.toLowerCase().trim();
+            if (!term) {
+                renderHistory();
+                return;
+            }
+            
+            const filtered = {};
+            Object.keys(currentData).forEach(dateStr => {
+                const entry = currentData[dateStr];
+                const haystack = [
+                    dateStr,
+                    formatDisplayDate(dateStr),
+                    entry.unit || '',
+                    entry.notes.robotic || '',
+                    entry.notes.tieplate || '',
+                    entry.notes.truck || '',
+                    entry.comments.unique || '',
+                    entry.comments.unsafe || '',
+                    entry.comments.new || ''
+                ].join(' ').toLowerCase();
+                
+                if (haystack.includes(term)) {
+                    filtered[dateStr] = entry;
+                }
+            });
+            
+            renderHistory(filtered);
+        }
+        
+        // Render insights / dashboard
+        function setInsightsRange(range) {
+            insightsRange = range;
+            // Update pill styles
+            ['7', '14', '30', 'all'].forEach(r => {
+                const btn = document.getElementById(`range-${r}`);
+                if (btn) {
+                    btn.classList.toggle('active', String(range) === r);
+                    if (String(range) === r) {
+                        btn.classList.remove('bg-white', 'border', 'border-slate-200', 'text-slate-600');
+                        btn.classList.add('bg-slate-900', 'text-white');
+                    } else {
+                        btn.classList.add('bg-white', 'border', 'border-slate-200', 'text-slate-600');
+                        btn.classList.remove('bg-slate-900', 'text-white');
+                    }
+                }
+            });
+            renderInsights();
+        }
+
+        function setReasonFilter(cat) {
+            reasonFilter = cat;
+            ['all', 'robotic', 'tieplate', 'truck'].forEach(c => {
+                const btn = document.getElementById(`rfilter-${c}`);
+                if (btn) {
+                    const isActive = c === cat;
+                    btn.classList.toggle('active', isActive);
+                    if (isActive) {
+                        btn.classList.remove('bg-white', 'border', 'border-slate-200', 'text-slate-600');
+                        btn.classList.add('bg-slate-900', 'text-white');
+                    } else {
+                        btn.classList.add('bg-white', 'border', 'border-slate-200', 'text-slate-600');
+                        btn.classList.remove('bg-slate-900', 'text-white');
+                    }
+                }
+            });
+            renderInsights();
+        }
+
+        function getFilteredDates() {
+            const allDates = Object.keys(currentData).sort();
+            if (insightsRange === 'all') return allDates;
+            
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - Number(insightsRange));
+            const cutoffStr = cutoff.toISOString().split('T')[0];
+            return allDates.filter(d => d >= cutoffStr);
+        }
+
+        function renderInsights() {
+            const dates = getFilteredDates();
+            
+            // Empty state
+            if (dates.length === 0) {
+                document.getElementById('insight-days').textContent = '0';
+                document.getElementById('insight-total').textContent = '0';
+                document.getElementById('insight-avg').textContent = '0';
+                document.getElementById('insight-top-cat').textContent = '—';
+                document.getElementById('insight-top-cat-count').textContent = '';
+                document.getElementById('insight-robotic').textContent = '0';
+                document.getElementById('insight-tieplate').textContent = '0';
+                document.getElementById('insight-truck').textContent = '0';
+                document.getElementById('insight-robotic-pct').textContent = '';
+                document.getElementById('insight-tieplate-pct').textContent = '';
+                document.getElementById('insight-truck-pct').textContent = '';
+                document.getElementById('insight-robotic-bar').style.width = '0%';
+                document.getElementById('insight-tieplate-bar').style.width = '0%';
+                document.getElementById('insight-truck-bar').style.width = '0%';
+                document.getElementById('insight-reasons').innerHTML = `
+                    <div class="text-sm text-slate-400 text-center py-4">No data in this range.<br>Log some tallies first.</div>`;
+                document.getElementById('trend-title').textContent = 'Trend';
+                if (chartInstance) chartInstance.destroy();
+                return;
+            }
+            
+            let totalRobotic = 0, totalTieplate = 0, totalTruck = 0;
+            const reasonCounts = {}; // reasonText → { count, category }
+            
+            dates.forEach(d => {
+                const e = currentData[d];
+                totalRobotic += e.tallies.robotic || 0;
+                totalTieplate += e.tallies.tieplate || 0;
+                totalTruck += e.tallies.truck || 0;
+                
+                if (e.reasons) {
+                    ['robotic', 'tieplate', 'truck'].forEach(cat => {
+                        (e.reasons[cat] || []).forEach(r => {
+                            if (!r) return;
+                            if (!reasonCounts[r]) reasonCounts[r] = { count: 0, category: cat };
+                            reasonCounts[r].count += 1;
+                        });
+                    });
+                }
+            });
+            
+            const grandTotal = totalRobotic + totalTieplate + totalTruck;
+            const avg = dates.length > 0 ? (grandTotal / dates.length).toFixed(1) : '0';
+            
+            // Top category
+            const cats = [
+                { name: 'Robotic', count: totalRobotic, key: 'robotic' },
+                { name: 'Tie Plate', count: totalTieplate, key: 'tieplate' },
+                { name: 'Truck', count: totalTruck, key: 'truck' }
+            ].sort((a, b) => b.count - a.count);
+            
+            document.getElementById('insight-days').textContent = dates.length;
+            document.getElementById('insight-total').textContent = grandTotal;
+            document.getElementById('insight-avg').textContent = avg;
+            document.getElementById('insight-top-cat').textContent = cats[0].count > 0 ? cats[0].name : '—';
+            document.getElementById('insight-top-cat-count').textContent = cats[0].count > 0 ? `${cats[0].count} interventions` : '';
+            
+            // Category numbers + bars
+            const maxCat = Math.max(totalRobotic, totalTieplate, totalTruck, 1);
+            const setCat = (id, val) => {
+                document.getElementById(`insight-${id}`).textContent = val;
+                const pct = grandTotal > 0 ? Math.round((val / grandTotal) * 100) : 0;
+                document.getElementById(`insight-${id}-pct`).textContent = grandTotal > 0 ? `${pct}%` : '';
+                document.getElementById(`insight-${id}-bar`).style.width = `${(val / maxCat) * 100}%`;
+            };
+            setCat('robotic', totalRobotic);
+            setCat('tieplate', totalTieplate);
+            setCat('truck', totalTruck);
+            
+            // Range label
+            const rangeLabel = insightsRange === 'all' ? 'All time' : `Last ${insightsRange} days`;
+            document.getElementById('trend-title').textContent = `${rangeLabel} Trend`;
+            document.getElementById('reasons-range-label').textContent = rangeLabel;
+            
+            // Top reasons (respecting category filter)
+            let filtered = Object.entries(reasonCounts);
+            if (reasonFilter !== 'all') {
+                filtered = filtered.filter(([, info]) => info.category === reasonFilter);
+            }
+            const sortedReasons = filtered.sort((a, b) => b[1].count - a[1].count).slice(0, 12);
+            
+            const reasonsContainer = document.getElementById('insight-reasons');
+            if (sortedReasons.length === 0) {
+                reasonsContainer.innerHTML = `
+                    <div class="text-sm text-slate-400 text-center py-4">No reasons in this filter / range.</div>`;
+            } else {
+                const maxCount = sortedReasons[0][1].count;
+                const catColor = { robotic: 'bg-sky-500', tieplate: 'bg-amber-500', truck: 'bg-red-500' };
+                const catIcon = { robotic: 'fa-robot text-sky-600', tieplate: 'fa-wrench text-amber-600', truck: 'fa-truck text-red-600' };
+                
+                reasonsContainer.innerHTML = sortedReasons.map(([text, info]) => {
+                    const pct = Math.round((info.count / maxCount) * 100);
+                    const short = text.length > 52 ? text.slice(0, 49) + '…' : text;
+                    return `
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <div class="flex items-center gap-x-2 min-w-0 flex-1">
+                                    <i class="fa-solid ${catIcon[info.category] || 'fa-circle text-slate-400'} text-xs w-4"></i>
+                                    <span class="text-sm text-slate-800 truncate" title="${text.replace(/"/g, '&quot;')}">${short}</span>
+                                </div>
+                                <span class="text-sm font-bold tabular-nums text-slate-900 ml-2">${info.count}</span>
+                            </div>
+                            <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="h-full ${catColor[info.category] || 'bg-slate-400'} rounded-full" style="width:${pct}%"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            // Trend chart
+            renderTrendChart(dates);
+        }
+        
+        function renderTrendChart(dates) {
+            const canvas = document.getElementById('trend-chart');
+            if (!canvas) return;
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+            
+            // Limit chart to a reasonable number of bars for readability
+            let sorted = [...dates].sort();
+            if (sorted.length > 14) {
+                sorted = sorted.slice(-14); // show most recent 14 points even on longer ranges
+            }
+            
+            const labels = sorted.map(d => {
+                const dt = new Date(d + 'T00:00:00');
+                return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            });
+            
+            const roboticData = sorted.map(d => (currentData[d] && currentData[d].tallies.robotic) || 0);
+            const tieplateData = sorted.map(d => (currentData[d] && currentData[d].tallies.tieplate) || 0);
+            const truckData = sorted.map(d => (currentData[d] && currentData[d].tallies.truck) || 0);
+            
+            const barThickness = sorted.length > 10 ? 6 : (sorted.length > 7 ? 8 : 12);
+            
+            chartInstance = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Robotic',
+                            data: roboticData,
+                            backgroundColor: '#0284c8',
+                            borderRadius: 3,
+                            barThickness: barThickness
+                        },
+                        {
+                            label: 'Tie Plate',
+                            data: tieplateData,
+                            backgroundColor: '#d97706',
+                            borderRadius: 3,
+                            barThickness: barThickness
+                        },
+                        {
+                            label: 'Truck',
+                            data: truckData,
+                            backgroundColor: '#dc2626',
+                            borderRadius: 3,
+                            barThickness: barThickness
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            display: true, 
+                            position: 'top', 
+                            align: 'end', 
+                            labels: { boxWidth: 8, padding: 10, font: { size: 10 } } 
+                        },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        x: { 
+                            grid: { display: false, drawBorder: false }, 
+                            ticks: { font: { size: 9 }, maxRotation: 0 } 
+                        },
+                        y: { 
+                            beginAtZero: true, 
+                            grid: { color: 'rgba(0,0,0,0.04)' }, 
+                            ticks: { stepSize: 1, font: { size: 10 } } 
+                        }
+                    }
+                }
+            });
+        }
+
+        // Export current analytics view as CSV
+        function exportAnalytics() {
+            const dates = getFilteredDates();
+            if (dates.length === 0) {
+                showToast('No data to export', true);
+                return;
+            }
+            
+            // Daily totals CSV
+            let csv = 'Date,Robotic System,Tie Plate Setter,Truck Malfunction,Total\n';
+            dates.forEach(d => {
+                const e = currentData[d];
+                const r = e.tallies.robotic || 0;
+                const t = e.tallies.tieplate || 0;
+                const u = e.tallies.truck || 0;
+                csv += `${d},${r},${t},${u},${r + t + u}\n`;
+            });
+            
+            // Reason frequency section
+            csv += '\n\nReason,Category,Count\n';
+            const reasonCounts = {};
+            dates.forEach(d => {
+                const e = currentData[d];
+                if (!e.reasons) return;
+                ['robotic', 'tieplate', 'truck'].forEach(cat => {
+                    (e.reasons[cat] || []).forEach(r => {
+                        const key = `${r}|||${cat}`;
+                        reasonCounts[key] = (reasonCounts[key] || 0) + 1;
+                    });
+                });
+            });
+            
+            Object.entries(reasonCounts)
+                .sort((a, b) => b[1] - a[1])
+                .forEach(([key, count]) => {
+                    const [reason, cat] = key.split('|||');
+                    // Escape quotes for CSV
+                    const safeReason = `"${reason.replace(/"/g, '""')}"`;
+                    csv += `${safeReason},${cat},${count}\n`;
+                });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const rangeLabel = insightsRange === 'all' ? 'alltime' : `${insightsRange}d`;
+            a.download = `bb_tally_analytics_${rangeLabel}_${getTodayStr().replace(/-/g, '')}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showToast('Analytics exported as CSV');
+        }
+        
+        // Export all data as JSON
+        function exportAllData() {
+            const dataStr = JSON.stringify(currentData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bb_tallyboard_export_${getTodayStr().replace(/-/g, '')}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showToast('JSON backup exported');
+        }
+
+        function exportAllDataToExcel() {
+            const dates = Object.keys(currentData).sort();
+            if (dates.length === 0) {
+                showToast('No data to export', true);
+                return;
+            }
+
+            if (typeof XLSX === 'undefined') {
+                showToast('Excel library not loaded – try JSON export', true);
+                return;
+            }
+
+            // --- Sheet 1: Daily Summary ---
+            const summaryRows = [
+                ['Date', 'Unit', 'Robotic System', 'Tie Plate Setter', 'Truck Malfunction', 'Total', 
+                 'Notes - Robotic', 'Notes - Tie Plate', 'Notes - Truck',
+                 'Unique / Other locations?', 'Unsafe?', 'New objects for robot?', 'Last Updated']
+            ];
+
+            dates.forEach(d => {
+                const e = currentData[d];
+                const r = e.tallies?.robotic || 0;
+                const t = e.tallies?.tieplate || 0;
+                const u = e.tallies?.truck || 0;
+                summaryRows.push([
+                    d,
+                    e.unit || '',
+                    r, t, u, r + t + u,
+                    e.notes?.robotic || '',
+                    e.notes?.tieplate || '',
+                    e.notes?.truck || '',
+                    e.comments?.unique || '',
+                    e.comments?.unsafe || '',
+                    e.comments?.new || '',
+                    e.last_updated || ''
+                ]);
+            });
+
+            // --- Sheet 2: Reasons Log ---
+            const reasonRows = [
+                ['Date', 'Unit', 'Category', 'Reason']
+            ];
+            dates.forEach(d => {
+                const e = currentData[d];
+                const unit = e.unit || '';
+                if (e.reasons) {
+                    ['robotic', 'tieplate', 'truck'].forEach(cat => {
+                        const catLabel = { robotic: 'Robotic System', tieplate: 'Tie Plate Setter', truck: 'Truck Malfunction' }[cat];
+                        (e.reasons[cat] || []).forEach(reason => {
+                            reasonRows.push([d, unit, catLabel, reason]);
+                        });
+                    });
+                }
+            });
+
+            // Build workbook
+            const wb = XLSX.utils.book_new();
+            
+            const ws1 = XLSX.utils.aoa_to_sheet(summaryRows);
+            // Column widths for readability
+            ws1['!cols'] = [
+                { wch: 12 }, { wch: 16 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 8 },
+                { wch: 40 }, { wch: 40 }, { wch: 40 },
+                { wch: 30 }, { wch: 25 }, { wch: 30 }, { wch: 22 }
+            ];
+            XLSX.utils.book_append_sheet(wb, ws1, 'Daily Summary');
+
+            const ws2 = XLSX.utils.aoa_to_sheet(reasonRows);
+            ws2['!cols'] = [
+                { wch: 12 }, { wch: 16 }, { wch: 18 }, { wch: 55 }
+            ];
+            XLSX.utils.book_append_sheet(wb, ws2, 'Reasons Log');
+
+            // Download
+            const filename = `bb_tallyboard_${getTodayStr().replace(/-/g, '')}.xlsx`;
+            XLSX.writeFile(wb, filename);
+            showToast('Excel file downloaded');
+        }
+        
+        // Import data (merge)
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json,application/json';
+            
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    try {
+                        const imported = JSON.parse(ev.target.result);
+                        let mergedCount = 0;
+                        
+                        Object.keys(imported).forEach(dateKey => {
+                            if (!currentData[dateKey]) {
+                                currentData[dateKey] = imported[dateKey];
+                                mergedCount++;
+                            } else {
+                                // Overwrite if exists (user can re-export if needed)
+                                currentData[dateKey] = imported[dateKey];
+                                mergedCount++;
+                            }
+                        });
+                        
+                        saveData();
+                        showToast(`Imported ${mergedCount} entries`);
+                        
+                        // Refresh current view if on history
+                        if (!document.getElementById('history-view').classList.contains('hidden')) {
+                            renderHistory();
+                        }
+                    } catch (err) {
+                        showToast('Invalid JSON file', true);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+        
+        // Print current day's report (nice formatted version)
+        function printCurrentDay() {
+            saveCurrent(); // ensure latest
+            
+            const entry = currentData[currentDateStr];
+            if (!entry) {
+                showToast('No data to print for this day', true);
+                return;
+            }
+            
+            const printWindow = window.open('', '_blank');
+            const total = (entry.tallies.robotic || 0) + (entry.tallies.tieplate || 0) + (entry.tallies.truck || 0);
+            
+            const html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Tally Board Report - ${currentDateStr}</title>
+                    <style>
+                        body { font-family: system-ui, -apple-system, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; color: #1e2937; }
+                        h1 { font-size: 22px; margin-bottom: 4px; }
+                        .header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #0f172a; padding-bottom: 12px; margin-bottom: 24px; }
+                        .meta { font-size: 13px; color: #64748b; }
+                        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                        th, td { border: 1px solid #cbd5e1; padding: 10px 14px; text-align: left; vertical-align: top; }
+                        th { background: #0f172a; color: white; font-weight: 600; }
+                        .count { font-size: 28px; font-weight: 700; text-align: center; }
+                        .section { margin-top: 32px; }
+                        .label { font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 6px; }
+                        .notes { background: #f8fafc; padding: 12px; border-radius: 8px; white-space: pre-wrap; min-height: 60px; }
+                        .questions { margin-top: 8px; }
+                        .q { margin-bottom: 16px; }
+                        .q-label { font-weight: 700; font-size: 12px; color: #334155; }
+                        .footer { margin-top: 60px; font-size: 11px; color: #94a3b8; text-align: center; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div>
+                            <h1>B&amp;B Railway Solutions</h1>
+                            <div style="font-size:13px; color:#64748b;">Automation Opportunity Tally Board</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:21px; font-weight:700;">${formatDisplayDate(currentDateStr)}</div>
+                            <div class="meta">${currentDateStr}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom:16px; font-size:14px;">
+                        <strong>Unit in Operation:</strong> ${entry.unit || '<em style="color:#94a3b8;">Not selected</em>'}
+                    </div>
+                    
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:32%">Robotic System</th>
+                                <th style="width:34%">Tie Plate Setter</th>
+                                <th style="width:34%">Truck Malfunction</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="count" style="color:#0284c8;">${entry.tallies.robotic || 0}</td>
+                                <td class="count" style="color:#d97706;">${entry.tallies.tieplate || 0}</td>
+                                <td class="count" style="color:#dc2626;">${entry.tallies.truck || 0}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Notes:</strong><br><div class="notes">${entry.notes.robotic || '<em style="color:#94a3b8;">No notes recorded</em>'}</div></td>
+                                <td><strong>Notes:</strong><br><div class="notes">${entry.notes.tieplate || '<em style="color:#94a3b8;">No notes recorded</em>'}</div></td>
+                                <td><strong>Notes:</strong><br><div class="notes">${entry.notes.truck || '<em style="color:#94a3b8;">No notes recorded</em>'}</div></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div style="margin-top:12px; font-size:13px; background:#f1f5f9; padding:4px 12px; border-radius:6px; display:inline-block;">
+                        <strong>Total human interventions:</strong> ${total}
+                    </div>
+                    
+                    <div class="section">
+                        <h3 style="font-size:15px; margin-bottom:12px; border-bottom:1px solid #e2e8f0; padding-bottom:6px;">Tally Board Comments</h3>
+                        
+                        <div class="q">
+                            <div class="q-label">1. Do these situations seem unique or likely occur at other job locations?</div>
+                            <div class="notes">${entry.comments.unique || '<em style="color:#94a3b8;">Not answered</em>'}</div>
+                        </div>
+                        <div class="q">
+                            <div class="q-label">2. Did any of these situations feel unsafe to you or anyone else involved?</div>
+                            <div class="notes">${entry.comments.unsafe || '<em style="color:#94a3b8;">Not answered</em>'}</div>
+                        </div>
+                        <div class="q">
+                            <div class="q-label">3. Are there any new objects that should be recognized for the Robot to pick up?</div>
+                            <div class="notes">${entry.comments.new || '<em style="color:#94a3b8;">Not answered</em>'}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="footer">
+                        Generated from B&amp;B Tally Board • ${new Date().toLocaleString()}<br>
+                        Data is for internal operational improvement only.
+                    </div>
+                </body>
+                </html>
+            `;
+            
+            printWindow.document.write(html);
+            printWindow.document.close();
+            
+            setTimeout(() => {
+                printWindow.print();
+            }, 450);
+        }
+        
+        // Go to today
+        function goToToday() {
+            const today = getTodayStr();
+            if (currentDateStr !== today) {
+                loadDate(today);
+            }
+            // If already on today but want to clear form? No, just ensure it's loaded
+            switchView('tally');
+        }
+
+        // Clear all data (memory + localStorage when available)
+        function clearAllData() {
+            if (!confirm('Clear ALL data? This cannot be recovered.')) return;
+            
+            currentData = {};
+            
+            if (persistenceAvailable) {
+                try {
+                    localStorage.removeItem(STORAGE_KEY);
+                } catch (e) {
+                    // ignore
+                }
+            }
+            
+            // Reload clean state for today
+            loadDate(getTodayStr());
+            showToast('All data cleared');
+            
+            // If on history or insights, refresh them
+            if (!document.getElementById('history-view').classList.contains('hidden')) {
+                renderHistory();
+            }
+            if (!document.getElementById('insights-view').classList.contains('hidden')) {
+                renderInsights();
+            }
+        }
+        
+        // Show menu (more actions)
+        function showMenu() {
+            const menuHTML = `
+                <div class="fixed inset-0 bg-black/40 z-[200] flex items-end" onclick="this.remove()">
+                    <div class="bg-white w-full rounded-t-3xl p-2 shadow-2xl" onclick="event.stopImmediatePropagation()">
+                        <div class="px-4 pt-3 pb-2 text-xs font-bold text-slate-500">MORE ACTIONS</div>
+                        
+                        <button onclick="importData(); document.querySelector('.fixed.inset-0').remove();" 
+                                class="w-full flex items-center gap-x-3 px-4 py-3.5 active:bg-slate-100 rounded-2xl text-left">
+                            <i class="fa-solid fa-upload w-5 text-slate-500"></i>
+                            <span class="font-medium">Import Data from JSON</span>
+                        </button>
+                        
+                        <button onclick="clearAllData(); document.querySelector('.fixed.inset-0').remove();" 
+                                class="w-full flex items-center gap-x-3 px-4 py-3.5 active:bg-slate-100 rounded-2xl text-left text-red-600">
+                            <i class="fa-solid fa-trash w-5"></i>
+                            <span class="font-medium">Clear All Data</span>
+                        </button>
+                        
+                        <div class="h-px bg-slate-100 my-1 mx-2"></div>
+                        
+                        <button onclick="document.querySelector('.fixed.inset-0').remove()" 
+                                class="w-full flex items-center justify-center px-4 py-3 text-sm font-semibold text-slate-500">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', menuHTML);
+        }
+        
+        // Initialize everything
+        function showRestrictedBanner() {
+            // Avoid adding the banner more than once
+            if (document.getElementById('restricted-banner')) return;
+            
+            const banner = document.createElement('div');
+            banner.id = 'restricted-banner';
+            banner.className = 'bg-amber-500 text-white text-center text-xs font-semibold py-2 px-4 sticky top-14 z-40 no-print';
+            banner.innerHTML = `
+                <i class="fa-solid fa-exclamation-triangle mr-1.5"></i>
+                Restricted environment detected — data is memory-only and will be lost on refresh.
+                For full persistence open this file directly in Chrome/Safari or host it on a normal web server.
+            `;
+            
+            // Insert right after the header
+            const header = document.querySelector('header');
+            if (header && header.nextSibling) {
+                header.parentNode.insertBefore(banner, header.nextSibling);
+            } else {
+                document.body.prepend(banner);
+            }
+            
+            // Soften the "Saved" indicator
+            const savedEl = document.getElementById('last-saved');
+            if (savedEl) {
+                savedEl.innerHTML = `<i class="fa-solid fa-info-circle mr-1"></i><span>Session only</span>`;
+                savedEl.className = `text-[10px] font-medium px-2.5 py-px rounded-2xl bg-amber-100 text-amber-800 inline-flex items-center gap-x-1`;
+            }
+        }
+
+        function initializeApp() {
+            initializeTailwind();
+            
+            // Detect restricted environments (sandbox, private mode, file:// quirks, etc.)
+            persistenceAvailable = testLocalStorage();
+            if (!persistenceAvailable) {
+                console.warn('[B&B Tally Board] localStorage blocked – running in memory-only mode');
+                showRestrictedBanner();
+            }
+            
+            loadData();
+            loadCustomReasons();
+            rebuildAllReasonSelects();
+            
+            // Set initial date to today
+            const today = getTodayStr();
+            currentDateStr = today;
+            
+            const dateInput = document.getElementById('current-date');
+            dateInput.value = today;
+            updateDayName(today);
+            
+            // Load today's data (or create empty)
+            loadDate(today);
+            
+            // Seed demo data if completely empty (first run)
+            if (Object.keys(currentData).length === 0) {
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yestStr = yesterday.toISOString().split('T')[0];
+                
+                currentData[yestStr] = {
+                    unit: 'Raiv-T1 / T-53',
+                    tallies: { robotic: 4, tieplate: 2, truck: 1 },
+                    notes: { 
+                        robotic: "Vision failed to detect 2 plates due to heavy rain on sensor.", 
+                        tieplate: "Setter arm needed manual realignment twice.", 
+                        truck: "Hydraulic pressure drop on lift gate." 
+                    },
+                    reasons: {
+                        robotic: [
+                            "Vision system missed tie plate alignment / detection failure",
+                            "Vision system missed tie plate alignment / detection failure",
+                            "Sensor / camera dirty, obstructed, or damaged",
+                            "False positive detection (foreign object or debris)"
+                        ],
+                        tieplate: [
+                            "Mechanical misalignment or wear",
+                            "Mechanical misalignment or wear"
+                        ],
+                        truck: [
+                            "Hydraulic leak or low system pressure"
+                        ]
+                    },
+                    comments: { 
+                        unique: "Rain-related vision problems seen at other sites before.", 
+                        unsafe: "No. All stops were controlled and operators followed SOP.", 
+                        new: "Consider adding wet-surface detection model for vision system." 
+                    },
+                    last_updated: new Date(yesterday.setHours(16, 20)).toISOString()
+                };
+                
+                // Add one more older entry
+                const twoDays = new Date();
+                twoDays.setDate(twoDays.getDate() - 2);
+                const twoStr = twoDays.toISOString().split('T')[0];
+                
+                currentData[twoStr] = {
+                    unit: 'Raiv-T2 / T-57',
+                    tallies: { robotic: 1, tieplate: 0, truck: 0 },
+                    notes: { robotic: "False positive on foreign object. Cleared manually.", tieplate: "", truck: "" },
+                    reasons: {
+                        robotic: ["False positive detection (foreign object or debris)"],
+                        tieplate: [],
+                        truck: []
+                    },
+                    comments: { 
+                        unique: "Likely isolated.", 
+                        unsafe: "No safety issues.", 
+                        new: "" 
+                    },
+                    last_updated: new Date(twoDays.setHours(11, 45)).toISOString()
+                };
+                
+                saveData(); // will no-op if persistence is blocked
+                
+                // Reload to show seeded data
+                loadDate(today);
+            }
+            
+            // Keyboard support for quick +1 on focused tallies (bonus)
+            document.addEventListener('keydown', function(e) {
+                // Escape closes the reason picker
+                if (e.key === 'Escape') {
+                    closeReasonPicker();
+                    return;
+                }
+                
+                if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+                
+                if (e.key === '+' || e.key === '=') {
+                    e.preventDefault();
+                    openReasonPicker('robotic');
+                }
+                if (e.key.toLowerCase() === 'r' && document.getElementById('tally-view').classList.contains('hidden') === false) {
+                    resetAllTallies();
+                }
+            });
+            
+            // Auto-save when leaving page (best effort)
+            window.addEventListener('beforeunload', () => {
+                if (currentDateStr) saveCurrent();
+            });
+            
+            // Initial last saved state
+            const todayEntry = currentData[today];
+            if (todayEntry && todayEntry.last_updated) {
+                updateLastSaved(todayEntry.last_updated);
+            } else {
+                document.getElementById('last-saved').innerHTML = `<i class="fa-solid fa-circle text-amber-500 mr-1"></i><span>New entry</span>`;
+                document.getElementById('last-saved').className = `text-[10px] font-medium px-2.5 py-px rounded-2xl bg-amber-100 text-amber-700 inline-flex items-center gap-x-1`;
+            }
+            
+            // Make sure total is correct on load
+            updateTotalCount();
+            
+            const modeMsg = persistenceAvailable 
+                ? 'Data stored in browser localStorage.' 
+                : 'Running in memory-only mode (restricted environment).';
+            console.log('%c[B&B Tally Board] Mobile-first daily tally app initialized. ' + modeMsg, 'color:#64748b');
+        }
+        
+        // Boot the app
+        window.onload = initializeApp;
+    </script>
+</body>
+</html>
