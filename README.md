@@ -4,81 +4,59 @@ Mobile-first web app for field crews to log human interventions on automated rai
 
 **Repo:** https://github.com/cotycoots-tech/bb-tally-board
 
-## Features
+## Storage (daily tallies are saved)
 
-- **Daily tally entry** — Robotic System, Tie Plate Setter, Truck Malfunction
-- **Reason picker** (bottom sheet) with icons + persistent custom reasons
-- **Unit selector** — Raiv-T1 / T-53, Raiv-T2 / T-57, Raiv-T3 / T-51
-- **History** with search, delete, Excel export
-- **Analytics dashboard** — date ranges, KPIs, trends, top reasons
-- **Print report** for paper records
-- Offline-capable (data in browser `localStorage`)
+Tallies are stored in **two places**:
 
-## Important: full app file
+1. **Device (localStorage)** — works offline on each phone
+2. **Cloud (server)** — when deployed as a Web Service, every device shares the same data file
 
-The complete `index.html` (~108 KB) needs to be on the repo root for the live site to work.
+The top of the app shows **Cloud saved** or **Device only**.
 
-### Upload the full app (one-time)
+## Deploy to Render (Web Service)
 
-1. Download the full `index.html` from your project folder (`artifacts/tallyboard/index.html`).
-2. On GitHub: open this repo → **Add file** → **Upload files**
-3. Drop `index.html` (replace the placeholder) and commit to `main`.
+Use a **Web Service** (not Static Site) so the API can store tallies.
 
-Or from a machine with git:
-
-```bash
-git clone https://github.com/cotycoots-tech/bb-tally-board.git
-cd bb-tally-board
-# copy your full index.html into this folder (overwrite the placeholder)
-git add index.html
-git commit -m "Add full Tally Board app"
-git push
-```
-
-## Deploy to Render (recommended)
-
-1. Go to [dashboard.render.com](https://dashboard.render.com) → **New** → **Static Site**
-2. Connect the GitHub account and select **bb-tally-board**
+1. [dashboard.render.com](https://dashboard.render.com) → **New** → **Web Service**
+2. Connect repo **bb-tally-board**
 3. Settings:
-   - **Name:** `bb-tally-board` (or any name)
-   - **Branch:** `main`
-   - **Build Command:** *(leave empty)*
-   - **Publish Directory:** `.`
-4. Click **Create Static Site**
+   - **Runtime:** Node
+   - **Build Command:** `npm install`
+   - **Start Command:** `npm start`
+4. Add a **Persistent Disk** (important so data survives restarts):
+   - Name: `tally-data`
+   - Mount path: `/opt/render/project/src/data`
+   - Size: 1 GB
+5. Deploy
 
-Render will give you a URL like `https://bb-tally-board.onrender.com`.
+Live URL example: `https://bb-tally-board.onrender.com`
 
-You can also use **Blueprint** with the included `render.yaml`.
+> Free instances sleep when idle; first load after sleep can take ~30 seconds.
 
-## Deploy to GitHub Pages
+## Project layout
 
-1. Repo **Settings** → **Pages**
-2. Source: **Deploy from a branch**
-3. Branch: `main` / folder: `/ (root)`
-4. Save
-
-Site URL: `https://cotycoots-tech.github.io/bb-tally-board/`
-
-## Local testing
-
-```bash
-npx serve .
-# or
-python3 -m http.server 8080
+```
+package.json / server.js   → API + host
+public/index.html          → the app UI
+data/tallies.json          → stored tallies (created at runtime)
 ```
 
-Open the URL on your phone to test the mobile UI.
+## Local run
 
-## Data & backup
+```bash
+npm install
+npm start
+# open http://localhost:3000
+```
 
-- All tallies stay in the device browser (`localStorage`)
-- Use **History → Export to Excel** for a spreadsheet (Daily Summary + Reasons Log)
-- Use **Export JSON** for a full backup you can import on another device
+## API
 
-## Tech
-
-- Single-file HTML/JS app
-- Tailwind CSS, Chart.js, SheetJS, Font Awesome (CDN)
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/health` | Health check |
+| GET | `/api/tallies` | All days |
+| PUT | `/api/tallies/:date` | Save one day |
+| DELETE | `/api/tallies/:date` | Delete one day |
 
 ## License
 
