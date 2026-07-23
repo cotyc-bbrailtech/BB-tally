@@ -1,63 +1,64 @@
 # B&B Tally Board — Field Ops
 
-Mobile-first web app for field crews to log human interventions on automated railway tie-plate systems.
+Mobile field app for logging human interventions on automated railway systems.
 
-**Repo:** https://github.com/cotycoots-tech/bb-tally-board
+**Free hosting + free storage via GitHub only — no Render.**
 
-## Storage (daily tallies are saved)
+## How storage works
 
-Tallies are stored in **two places**:
+| Layer | Purpose |
+|-------|---------|
+| **This phone** | localStorage — works offline |
+| **GitHub repo** | Shared file `data/tallies.json` — all crews see the same tallies |
 
-1. **Device (localStorage)** — works offline on each phone
-2. **Cloud (server)** — when deployed as a Web Service, every device shares the same data file
+Connect once: **⋯ menu → GitHub Sync Settings**
 
-The top of the app shows **Cloud saved** or **Device only**.
+## 1. Enable GitHub Pages (free site)
 
-## Deploy to Render (Web Service)
+1. Open https://github.com/cotycoots-tech/bb-tally-board  
+2. **Settings → Pages**  
+3. Source: **Deploy from a branch**  
+4. Branch: `main` / folder: `/ (root)`  
+5. Save  
 
-Use a **Web Service** (not Static Site) so the API can store tallies.
+Site URL: **https://cotycoots-tech.github.io/bb-tally-board/**
 
-1. [dashboard.render.com](https://dashboard.render.com) → **New** → **Web Service**
-2. Connect repo **bb-tally-board**
-3. Settings:
-   - **Runtime:** Node
-   - **Build Command:** `npm install`
-   - **Start Command:** `npm start`
-4. Add a **Persistent Disk** (important so data survives restarts):
-   - Name: `tally-data`
-   - Mount path: `/opt/render/project/src/data`
-   - Size: 1 GB
-5. Deploy
+## 2. Create a token (once)
 
-Live URL example: `https://bb-tally-board.onrender.com`
+1. GitHub → **Settings → Developer settings → Personal access tokens → Fine-grained tokens**  
+2. **Generate**  
+   - Repository access: only **bb-tally-board**  
+   - Permissions → **Contents: Read and write**  
+3. Copy the token  
 
-> Free instances sleep when idle; first load after sleep can take ~30 seconds.
+## 3. Connect the app on each phone
 
-## Project layout
+1. Open the Pages URL on the phone  
+2. Tap **⋯** → **GitHub Sync Settings**  
+3. Enter:
+   - Owner: `cotycoots-tech`  
+   - Repo: `bb-tally-board`  
+   - Token: *(paste)*  
+   - Path: `data/tallies.json`  
+4. **Save & Connect**  
 
-```
-package.json / server.js   → API + host
-public/index.html          → the app UI
-data/tallies.json          → stored tallies (created at runtime)
-```
+Badge shows **GitHub saved** when sync is working.
 
-## Local run
+Token stays only on that phone (not committed to the repo). Prefer a **private** repo.
+
+## Local file
+
+Open `index.html` in a browser, or:
 
 ```bash
-npm install
-npm start
-# open http://localhost:3000
+python3 -m http.server 8080
 ```
 
-## API
+## Files that matter
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/health` | Health check |
-| GET | `/api/tallies` | All days |
-| PUT | `/api/tallies/:date` | Save one day |
-| DELETE | `/api/tallies/:date` | Delete one day |
+- `index.html` — the app  
+- `data/tallies.json` — live shared tallies (updated by the app via API)  
 
 ## License
 
-Internal use — B&B Railway Solutions / Field Ops.
+Internal — B&B Railway Solutions / Field Ops.
