@@ -1,1 +1,103 @@
-{}
+{
+  "2026-07-27": {
+    "unit": "Raiv-T2 / T-57",
+    "tallies": {
+      "robotic": 2,
+      "tieplate": 1,
+      "truck": 0
+    },
+    "notes": {
+      "robotic": "Communication loss with PLC / controller. Electrical or control system issue",
+      "tieplate": "Flipper mechanism malfunction",
+      "truck": ""
+    },
+    "reasons": {
+      "robotic": [
+        "Robot arm place or alignment error",
+        "Robot arm place or alignment error"
+      ],
+      "tieplate": [
+        "Flipper mechanism malfunction",
+        "Flipper mechanism malfunction",
+        "Plate misfeed or improper seating in setter"
+      ],
+      "truck": []
+    },
+    "comments": {
+      "unique": "",
+      "unsafe": "",
+      "new": ""
+    },
+    "last_updated": "2026-07-27T17:23:26.475Z"
+  },
+  "2026-07-20": {
+    "unit": "Raiv-T1 / T-53",
+    "tallies": {
+      "robotic": 10,
+      "tieplate": 0,
+      "truck": 0
+    },
+    "notes": {
+      "robotic": "False positive detection (foreign object or debris). Electrical or control system issue",
+      "tieplate": "",
+      "truck": ""
+    },
+    "reasons": {
+      "robotic": [
+        "False positive detection (foreign object or debris)",
+        "False positive detection (foreign object or debris)",
+        "Electrical or control system issue",
+        "Electrical or control system issue",
+        "Electrical or control system issue",
+        "Electrical or control system issue",
+        "Electrical or control system issue",
+        "Electrical or control system issue",
+        "Electrical or control system issue",
+        "Electrical or control system issue"
+      ],
+      "tieplate": [],
+      "truck": []
+    },
+    "comments": {
+      "unique": "",
+      "unsafe": "",
+      "new": ""
+    },
+    "last_updated": "2026-07-27T17:24:09.286Z"
+  },
+  "2026-07-19": {
+    "unit": "Raiv-T1 / T-53",
+    "tallies": {
+      "robotic": 0,
+      "tieplate": 10,
+      "truck": 0
+    },
+    "notes": {
+      "robotic": "",
+      "tieplate": "Bent, damaged, or malformed tie plate",
+      "truck": ""
+    },
+    "reasons": {
+      "robotic": [],
+      "tieplate": [
+        "Bent, damaged, or malformed tie plate",
+        "Bent, damaged, or malformed tie plate",
+        "Bent, damaged, or malformed tie plate",
+        "Bent, damaged, or malformed tie plate",
+        "Bent, damaged, or malformed tie plate",
+        "Bent, damaged, or malformed tie plate",
+        "Bent, damaged, or malformed tie plate",
+        "Bent, damaged, or malformed tie plate",
+        "Bent, damaged, or malformed tie plate",
+        "Bent, damaged, or malformed tie plate"
+      ],
+      "truck": []
+    },
+    "comments": {
+      "unique": "",
+      "unsafe": "",
+      "new": ""
+    },
+    "last_updated": "2026-07-27T17:25:37.013Z"
+  }
+}
