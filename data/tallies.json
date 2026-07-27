@@ -2,12 +2,12 @@
   "2026-07-27": {
     "unit": "Raiv-T2 / T-57",
     "tallies": {
-      "robotic": 4,
+      "robotic": 5,
       "tieplate": 1,
       "truck": 0
     },
     "notes": {
-      "robotic": "Communication loss with PLC / controller. Electrical or control system issue. False positive detection (foreign object or debris)",
+      "robotic": "Communication loss with PLC / controller. Electrical or control system issue. False positive detection (foreign object or debris). Gripper failed to hold part",
       "tieplate": "Flipper mechanism malfunction",
       "truck": ""
     },
@@ -16,7 +16,9 @@
         "Robot arm place or alignment error",
         "Robot arm place or alignment error",
         "False positive detection (foreign object or debris)",
-        "False positive detection (foreign object or debris)"
+        "False positive detection (foreign object or debris)",
+        "Gripper failed to hold part",
+        "Gripper failed to hold part"
       ],
       "tieplate": [
         "Flipper mechanism malfunction",
@@ -34,7 +36,7 @@
       "name": "Coty",
       "profile": "demo"
     },
-    "last_updated": "2026-07-27T20:38:05.394Z"
+    "last_updated": "2026-07-27T20:38:10.114Z"
   },
   "2026-07-20": {
     "unit": "Raiv-T1 / T-53",
