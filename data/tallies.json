@@ -1,1 +1,26 @@
-{}
+{
+  "2026-07-27": {
+    "unit": "Raiv-T2 / T-57",
+    "tallies": {
+      "robotic": 0,
+      "tieplate": 0,
+      "truck": 0
+    },
+    "notes": {
+      "robotic": "",
+      "tieplate": "",
+      "truck": ""
+    },
+    "reasons": {
+      "robotic": [],
+      "tieplate": [],
+      "truck": []
+    },
+    "comments": {
+      "unique": "",
+      "unsafe": "",
+      "new": ""
+    },
+    "last_updated": "2026-07-27T17:11:57.321Z"
+  }
+}
