@@ -2,7 +2,7 @@
   "2026-07-27": {
     "unit": "Raiv-T2 / T-57",
     "tallies": {
-      "robotic": 3,
+      "robotic": 4,
       "tieplate": 1,
       "truck": 0
     },
@@ -34,7 +34,7 @@
       "name": "Coty",
       "profile": "demo"
     },
-    "last_updated": "2026-07-27T20:38:03.782Z"
+    "last_updated": "2026-07-27T20:38:05.394Z"
   },
   "2026-07-20": {
     "unit": "Raiv-T1 / T-53",
