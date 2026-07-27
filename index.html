@@ -146,11 +146,12 @@
                 </div>
                 
                 <div class="flex items-center gap-x-2 text-sm">
-                    <div class="hidden sm:flex items-center bg-slate-800 rounded-3xl px-3 py-1 text-xs">
-                        <i class="fa-solid fa-map-marker-alt mr-1.5 text-orange-400"></i>
-                        <span class="font-medium">Field Ops</span>
-                    </div>
-                    <button onclick="showMenu()" 
+                    <button onclick="openGhSettings()"
+                            class="flex items-center bg-slate-800 hover:bg-slate-700 rounded-3xl px-3 py-1 text-xs max-w-[150px] sm:max-w-none">
+                        <i class="fa-solid fa-id-badge mr-1.5 text-orange-400 shrink-0"></i>
+                        <span id="header-profile-label" class="font-medium truncate">Demo</span>
+                    </button>
+                    <button onclick="showMenu()"
                             class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white active:bg-slate-800 rounded-2xl transition-colors">
                         <i class="fa-solid fa-ellipsis-v text-lg"></i>
                     </button>
@@ -1184,6 +1185,14 @@
         function applyProfilePermissions() {
             const btn = document.getElementById('export-json-btn');
             if (btn) btn.classList.toggle('hidden', !shouldShowDataTools());
+
+            const badge = document.getElementById('header-profile-label');
+            if (badge) {
+                const name = getProfileName();
+                const label = name ? `${name} — ${PROFILE_LABELS[getProfile()]}` : PROFILE_LABELS[getProfile()];
+                badge.textContent = label;
+                badge.title = label;
+            }
         }
 
         // ---------- Custom Reasons Persistence ----------
