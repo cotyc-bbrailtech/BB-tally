@@ -69,7 +69,7 @@
     "unit": "Raiv-T1 / T-53",
     "tallies": {
       "robotic": 0,
-      "tieplate": 2,
+      "tieplate": 3,
       "truck": 0
     },
     "notes": {
@@ -91,6 +91,6 @@
       "unsafe": "",
       "new": ""
     },
-    "last_updated": "2026-07-27T17:25:15.712Z"
+    "last_updated": "2026-07-27T17:25:16.942Z"
   }
 }
