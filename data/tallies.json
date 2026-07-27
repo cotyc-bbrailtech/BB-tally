@@ -33,7 +33,7 @@
   "2026-07-20": {
     "unit": "Raiv-T1 / T-53",
     "tallies": {
-      "robotic": 7,
+      "robotic": 9,
       "tieplate": 0,
       "truck": 0
     },
@@ -51,6 +51,8 @@
         "Electrical or control system issue",
         "Electrical or control system issue",
         "Electrical or control system issue",
+        "Electrical or control system issue",
+        "Electrical or control system issue",
         "Electrical or control system issue"
       ],
       "tieplate": [],
@@ -61,6 +63,6 @@
       "unsafe": "",
       "new": ""
     },
-    "last_updated": "2026-07-27T17:23:54.352Z"
+    "last_updated": "2026-07-27T17:23:56.476Z"
   }
 }
