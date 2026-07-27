@@ -376,26 +376,26 @@
                 <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-5">
                     
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-1.5 tracking-wider">1. Do these situations seem unique or likely occur at other job locations?</label>
-                        <textarea id="comment-unique" rows="2" 
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5 tracking-wider">1. Which issue caused the most downtime today — and have you seen it happen before, here or at another site/unit?</label>
+                        <textarea id="comment-unique" rows="2"
                                   class="w-full text-sm border border-slate-200 focus:border-slate-400 rounded-2xl p-3 placeholder:text-slate-400"
-                                  placeholder="e.g. Similar issue seen at Site B last month..."
+                                  placeholder="e.g. Tie plate misfeeds cost ~20 min today; saw the same issue at Site B last month..."
                                   oninput="debouncedSave()"></textarea>
                     </div>
-                    
+
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-1.5 tracking-wider">2. Did any of these situations feel unsafe to you or anyone else involved?</label>
-                        <textarea id="comment-unsafe" rows="2" 
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5 tracking-wider">2. Was there a moment today that felt unsafe or made you uneasy? What happened, and what would have prevented it?</label>
+                        <textarea id="comment-unsafe" rows="2"
                                   class="w-full text-sm border border-slate-200 focus:border-slate-400 rounded-2xl p-3 placeholder:text-slate-400"
-                                  placeholder="e.g. No safety concerns. Operator had clear line of sight..."
+                                  placeholder="e.g. Robot arm swung near a foot during reset — better sightline markings would help..."
                                   oninput="debouncedSave()"></textarea>
                     </div>
-                    
+
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-1.5 tracking-wider">3. Are there any new objects that should be recognized for the Robot to pick up?</label>
-                        <textarea id="comment-new" rows="2" 
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5 tracking-wider">3. Did the robot miss, misjudge, or fail to grab anything today? Describe the object and what went wrong.</label>
+                        <textarea id="comment-new" rows="2"
                                   class="w-full text-sm border border-slate-200 focus:border-slate-400 rounded-2xl p-3 placeholder:text-slate-400"
-                                  placeholder="e.g. New type of tie plate with different hole pattern..."
+                                  placeholder="e.g. Grabbed the wrong end of a bent tie plate twice — vision didn't flag the bend..."
                                   oninput="debouncedSave()"></textarea>
                     </div>
                     
