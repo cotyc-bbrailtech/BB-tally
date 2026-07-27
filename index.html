@@ -666,11 +666,13 @@
         // Data storage
         const STORAGE_KEY = 'bb_tallyboard_v1';
         const CUSTOM_REASONS_KEY = 'bb_tally_custom_reasons_v1';
+        const DELETED_DATES_KEY = 'bb_tally_deleted_v1';
         let currentData = {};
         let currentDateStr = '';
         let chartInstance = null;
         let saveTimeout = null;
         let customReasons = { robotic: [], tieplate: [], truck: [] };
+        let deletedDates = {}; // { 'YYYY-MM-DD': isoTimestampOfDeletion } — tombstones so a cloud merge can't resurrect a deleted day
         let insightsRange = 7;          // 7 | 14 | 30 | 'all'
         let reasonFilter = 'all';        // 'all' | 'robotic' | 'tieplate' | 'truck'
 
@@ -780,6 +782,13 @@
                 updateCloudBadge();
                 return false;
             }
+            // Flush any pending debounced edit (e.g. a reason just picked, a note being typed)
+            // before pulling remote data, so it isn't lost to the stale-timestamp merge below.
+            if (saveTimeout) {
+                clearTimeout(saveTimeout);
+                saveTimeout = null;
+                saveCurrent();
+            }
             cloudStatus = 'checking';
             updateCloudBadge();
             try {
@@ -806,16 +815,29 @@
                 // Merge remote with local
                 const local = currentData || {};
                 const merged = { ...local };
+                let tombstonesChanged = false;
                 Object.keys(decoded || {}).forEach(date => {
                     const r = decoded[date];
                     const l = local[date];
+                    const rTime = r.last_updated ? Date.parse(r.last_updated) : 0;
+                    const deletedAt = deletedDates[date] ? Date.parse(deletedDates[date]) : 0;
+                    if (deletedAt) {
+                        if (deletedAt >= rTime) {
+                            // This device deleted the day after the remote copy was last touched — honor the deletion.
+                            delete merged[date];
+                            return;
+                        }
+                        // Remote has a newer edit than our deletion — someone re-added it, so un-delete here too.
+                        delete deletedDates[date];
+                        tombstonesChanged = true;
+                    }
                     if (!l) merged[date] = r;
                     else {
-                        const rTime = r.last_updated ? Date.parse(r.last_updated) : 0;
                         const lTime = l.last_updated ? Date.parse(l.last_updated) : 0;
                         merged[date] = rTime >= lTime ? r : l;
                     }
                 });
+                if (tombstonesChanged) saveDeletedDates();
                 currentData = merged;
                 saveDataLocal();
                 cloudAvailable = true;
@@ -850,6 +872,18 @@
         function startCloudPolling() {
             if (cloudPollTimer) clearInterval(cloudPollTimer);
             cloudPollTimer = setInterval(refreshFromCloud, 30000);
+        }
+
+        // Test whether localStorage is usable in the current context
+        function testLocalStorage() {
+            try {
+                const testKey = '__bb_tally_test__';
+                localStorage.setItem(testKey, 'ok');
+                localStorage.removeItem(testKey);
+                return true;
+            } catch (e) {
+                return false;
+            }
         }
 
         function loadData() {
@@ -1025,6 +1059,24 @@
                 localStorage.setItem(CUSTOM_REASONS_KEY, JSON.stringify(customReasons));
             } catch (e) {
                 console.warn('Could not persist custom reasons', e);
+            }
+        }
+
+        // ---------- Deletion Tombstones (so a cloud merge can't resurrect a day deleted on this device) ----------
+        function loadDeletedDates() {
+            try {
+                const raw = localStorage.getItem(DELETED_DATES_KEY);
+                deletedDates = raw ? JSON.parse(raw) : {};
+            } catch (e) {
+                deletedDates = {};
+            }
+        }
+
+        function saveDeletedDates() {
+            try {
+                localStorage.setItem(DELETED_DATES_KEY, JSON.stringify(deletedDates));
+            } catch (e) {
+                console.warn('Could not persist deletion tombstones', e);
             }
         }
 
@@ -1569,8 +1621,10 @@
         // Delete a history entry
         function deleteEntry(dateStr) {
             if (!confirm(`Delete the entry for ${formatDisplayDate(dateStr)}? This cannot be undone.`)) return;
-            
+
             delete currentData[dateStr];
+            deletedDates[dateStr] = new Date().toISOString();
+            saveDeletedDates();
             saveDataLocal();
             deleteDayFromCloud(dateStr);
             renderHistory();
@@ -2206,31 +2260,31 @@
         // Show menu (more actions)
         function showMenu() {
             const menuHTML = `
-                <div class="fixed inset-0 bg-black/40 z-[200] flex items-end" onclick="this.remove()">
+                <div id="more-actions-modal" class="fixed inset-0 bg-black/40 z-[200] flex items-end" onclick="this.remove()">
                     <div class="bg-white w-full rounded-t-3xl p-2 shadow-2xl" onclick="event.stopImmediatePropagation()">
                         <div class="px-4 pt-3 pb-2 text-xs font-bold text-slate-500">MORE ACTIONS</div>
 
-                        <button onclick="document.querySelector('.fixed.inset-0').remove(); openGhSettings();" 
+                        <button onclick="document.getElementById('more-actions-modal').remove(); openGhSettings();"
                                 class="w-full flex items-center gap-x-3 px-4 py-3.5 active:bg-slate-100 rounded-2xl text-left">
                             <i class="fa-brands fa-github w-5 text-slate-700"></i>
                             <span class="font-medium">GitHub Sync Settings</span>
                         </button>
-                        
-                        <button onclick="importData(); document.querySelector('.fixed.inset-0').remove();" 
+
+                        <button onclick="importData(); document.getElementById('more-actions-modal').remove();"
                                 class="w-full flex items-center gap-x-3 px-4 py-3.5 active:bg-slate-100 rounded-2xl text-left">
                             <i class="fa-solid fa-upload w-5 text-slate-500"></i>
                             <span class="font-medium">Import Data from JSON</span>
                         </button>
-                        
-                        <button onclick="clearAllData(); document.querySelector('.fixed.inset-0').remove();" 
+
+                        <button onclick="clearAllData(); document.getElementById('more-actions-modal').remove();"
                                 class="w-full flex items-center gap-x-3 px-4 py-3.5 active:bg-slate-100 rounded-2xl text-left text-red-600">
                             <i class="fa-solid fa-trash w-5"></i>
                             <span class="font-medium">Clear All Data</span>
                         </button>
-                        
+
                         <div class="h-px bg-slate-100 my-1 mx-2"></div>
-                        
-                        <button onclick="document.querySelector('.fixed.inset-0').remove()" 
+
+                        <button onclick="document.getElementById('more-actions-modal').remove()"
                                 class="w-full flex items-center justify-center px-4 py-3 text-sm font-semibold text-slate-500">
                             Close
                         </button>
@@ -2282,6 +2336,7 @@
             
             loadData();
             loadCustomReasons();
+            loadDeletedDates();
             rebuildAllReasonSelects();
             
             // Set initial date to today
@@ -2312,8 +2367,10 @@
                 if (!document.hidden) refreshFromCloud();
             });
             
-            // Seed demo data if completely empty (first run)
-            if (Object.keys(currentData).length === 0) {
+            // Seed demo data if completely empty (first run, device-only — never when GitHub
+            // Sync is connected, so fabricated entries can't race the real cloud merge above
+            // or get pushed into the shared repo as if they were genuine field records)
+            if (Object.keys(currentData).length === 0 && !ghConfig) {
                 const yesterday = new Date();
                 yesterday.setDate(yesterday.getDate() - 1);
                 const yestStr = yesterday.toISOString().split('T')[0];
