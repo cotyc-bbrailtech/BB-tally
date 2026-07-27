@@ -3,19 +3,21 @@
     "unit": "Raiv-T2 / T-57",
     "tallies": {
       "robotic": 1,
-      "tieplate": 0,
+      "tieplate": 1,
       "truck": 0
     },
     "notes": {
       "robotic": "Robot arm place or alignment error",
-      "tieplate": "",
+      "tieplate": "Flipper mechanism malfunction",
       "truck": ""
     },
     "reasons": {
       "robotic": [
         "Robot arm place or alignment error"
       ],
-      "tieplate": [],
+      "tieplate": [
+        "Flipper mechanism malfunction"
+      ],
       "truck": []
     },
     "comments": {
@@ -23,6 +25,6 @@
       "unsafe": "",
       "new": ""
     },
-    "last_updated": "2026-07-27T17:12:03.171Z"
+    "last_updated": "2026-07-27T17:12:06.926Z"
   }
 }
