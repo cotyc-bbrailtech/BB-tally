@@ -455,7 +455,7 @@
                         <i class="fa-solid fa-file-excel"></i>
                         <span>Export to Excel</span>
                     </button>
-                    <button onclick="exportAllData()" 
+                    <button id="export-json-btn" onclick="exportAllData()"
                             class="text-xs font-medium px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 rounded-3xl flex items-center gap-x-2 mx-auto text-slate-600">
                         <i class="fa-solid fa-code"></i>
                         <span>Export JSON (backup)</span>
@@ -685,12 +685,16 @@
         const STORAGE_KEY = 'bb_tallyboard_v1';
         const CUSTOM_REASONS_KEY = 'bb_tally_custom_reasons_v1';
         const DELETED_DATES_KEY = 'bb_tally_deleted_v1';
+        const PROFILE_KEY = 'bb_tally_profile_v1';
+        const PROFILE_LABELS = { admin: 'Admin', fieldops: 'Field Ops', demo: 'Demo' };
+        const ADMIN_PIN = '4471'; // Soft deterrent only — a plain constant in page source, not real security. Change it any time.
         let currentData = {};
         let currentDateStr = '';
         let chartInstance = null;
         let saveTimeout = null;
         let customReasons = { robotic: [], tieplate: [], truck: [] };
         let deletedDates = {}; // { 'YYYY-MM-DD': isoTimestampOfDeletion } — tombstones so a cloud merge can't resurrect a deleted day
+        let userProfile = null; // { name, profile: 'admin'|'fieldops'|'demo' } | null — null means never configured, defaults to Demo
         let insightsRange = 7;          // 7 | 14 | 30 | 'all'
         let reasonFilter = 'all';        // 'all' | 'robotic' | 'tieplate' | 'truck'
 
@@ -1014,47 +1018,102 @@
 
         function openGhSettings() {
             loadGhConfig();
-            const existing = ghConfig || { owner: 'cotyc-bbrailtech', repo: 'BB-tally', token: '', path: 'data/tallies.json' };
+            loadProfile();
+            const existingGh = ghConfig || { owner: 'cotyc-bbrailtech', repo: 'BB-tally', token: '', path: 'data/tallies.json' };
+            const existingProfile = getProfile();
+            const existingName = getProfileName();
             const html = `
                 <div class="fixed inset-0 bg-black/50 z-[200] flex items-end sm:items-center justify-center" id="gh-settings-modal">
                     <div class="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto" onclick="event.stopImmediatePropagation()">
                         <div class="flex items-center justify-between mb-4">
                             <div>
-                                <div class="text-[10px] font-bold text-slate-400 tracking-wider">CLOUD STORAGE</div>
-                                <div class="text-lg font-bold text-slate-900">GitHub Sync</div>
+                                <div class="text-[10px] font-bold text-slate-400 tracking-wider">DEVICE SETUP</div>
+                                <div class="text-lg font-bold text-slate-900">Profile &amp; Sync</div>
                             </div>
                             <button onclick="document.getElementById('gh-settings-modal').remove()" class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center">
                                 <i class="fa-solid fa-times text-slate-500"></i>
                             </button>
                         </div>
-                        <p class="text-xs text-slate-500 mb-4">Saves every tally into a file in your GitHub repo. Create a fine-grained token with <b>Contents: Read and write</b> on this repo.</p>
+
+                        <label class="text-[10px] font-bold text-slate-500 block mb-1">Your name</label>
+                        <input id="profile-name" value="${escapeHtml(existingName)}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="e.g. Coty C.">
+
+                        <label class="text-[10px] font-bold text-slate-500 block mb-1">Device profile</label>
+                        <select id="profile-select" onchange="onProfileSelectChange()" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-1 bg-white">
+                            <option value="demo" ${existingProfile === 'demo' ? 'selected' : ''}>Demo (view + export only)</option>
+                            <option value="fieldops" ${existingProfile === 'fieldops' ? 'selected' : ''}>Field Ops</option>
+                            <option value="admin" ${existingProfile === 'admin' ? 'selected' : ''}>Admin</option>
+                        </select>
+                        <p class="text-[10px] text-slate-400 mb-3">Field Ops hides Import/Clear/JSON-backup entirely. Demo shows them but disables them. Admin unlocks everything.</p>
+
+                        <div id="profile-pin-row" class="hidden mb-3">
+                            <label class="text-[10px] font-bold text-slate-500 block mb-1">Admin PIN</label>
+                            <input id="profile-pin" type="password" inputmode="numeric" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm" placeholder="Enter PIN to unlock Admin">
+                        </div>
+
+                        <div class="h-px bg-slate-100 my-3"></div>
+
+                        <div class="text-[10px] font-bold text-slate-400 tracking-wider mb-1">CLOUD STORAGE (OPTIONAL)</div>
+                        <p class="text-xs text-slate-500 mb-4">Leave blank to keep this device local-only. Create a fine-grained token with <b>Contents: Read and write</b> on this repo.</p>
                         <label class="text-[10px] font-bold text-slate-500 block mb-1">Repo owner</label>
-                        <input id="gh-owner" value="${existing.owner || ''}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="cotyc-bbrailtech">
+                        <input id="gh-owner" value="${existingGh.owner || ''}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="cotyc-bbrailtech">
                         <label class="text-[10px] font-bold text-slate-500 block mb-1">Repo name</label>
-                        <input id="gh-repo" value="${existing.repo || ''}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="BB-tally">
+                        <input id="gh-repo" value="${existingGh.repo || ''}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="BB-tally">
                         <label class="text-[10px] font-bold text-slate-500 block mb-1">Personal access token</label>
-                        <input id="gh-token" type="password" value="${existing.token || ''}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="github_pat_…">
+                        <input id="gh-token" type="password" value="${existingGh.token || ''}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="github_pat_…">
                         <label class="text-[10px] font-bold text-slate-500 block mb-1">File path in repo</label>
-                        <input id="gh-path" value="${existing.path || 'data/tallies.json'}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-4" placeholder="data/tallies.json">
+                        <input id="gh-path" value="${existingGh.path || 'data/tallies.json'}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-4" placeholder="data/tallies.json">
                         <div class="flex gap-2">
-                            <button onclick="saveGhSettingsFromForm()" class="flex-1 py-3 bg-slate-900 text-white font-semibold rounded-2xl text-sm">Save &amp; Connect</button>
-                            <button onclick="clearGhConfig(); document.getElementById('gh-settings-modal').remove(); showToast('GitHub sync disconnected');" class="px-4 py-3 border border-slate-300 rounded-2xl text-sm text-slate-600">Clear</button>
+                            <button onclick="saveGhSettingsFromForm()" class="flex-1 py-3 bg-slate-900 text-white font-semibold rounded-2xl text-sm">Save</button>
+                            <button onclick="clearGhConfig(); document.getElementById('gh-settings-modal').remove(); showToast('GitHub sync disconnected');" class="px-4 py-3 border border-slate-300 rounded-2xl text-sm text-slate-600">Clear GitHub</button>
                         </div>
                         <p class="text-[10px] text-slate-400 mt-3">Token stays only on this phone (localStorage). Use a private repo.</p>
                     </div>
                 </div>`;
             document.body.insertAdjacentHTML('beforeend', html);
+            onProfileSelectChange();
+        }
+
+        function onProfileSelectChange() {
+            const sel = document.getElementById('profile-select');
+            const row = document.getElementById('profile-pin-row');
+            if (!sel || !row) return;
+            row.classList.toggle('hidden', !requiresPinToEscalate(sel.value));
         }
 
         async function saveGhSettingsFromForm() {
+            // ---- Profile / Name: always evaluated, independent of GitHub fields ----
+            const nameVal = document.getElementById('profile-name').value.trim();
+            const selectedProfile = document.getElementById('profile-select').value;
+
+            if (requiresPinToEscalate(selectedProfile)) {
+                const pinVal = (document.getElementById('profile-pin')?.value || '').trim();
+                if (pinVal !== ADMIN_PIN) {
+                    showToast('Incorrect Admin PIN', true);
+                    return;
+                }
+            }
+            saveProfile({ name: nameVal, profile: selectedProfile });
+            applyProfilePermissions();
+
+            // ---- GitHub Sync: optional as a group ----
             const owner = document.getElementById('gh-owner').value.trim();
             const repo = document.getElementById('gh-repo').value.trim();
             const token = document.getElementById('gh-token').value.trim();
             const path = document.getElementById('gh-path').value.trim() || 'data/tallies.json';
-            if (!owner || !repo || !token) {
-                showToast('Owner, repo, and token are required', true);
+            const anyGhFilled = !!(owner || repo || token);
+            const allGhFilled = !!(owner && repo && token);
+
+            if (!anyGhFilled) {
+                document.getElementById('gh-settings-modal')?.remove();
+                showToast('Profile saved');
                 return;
             }
+            if (!allGhFilled) {
+                showToast('Owner, repo, and token are all required to connect GitHub (or leave all three blank)', true);
+                return;
+            }
+
             saveGhConfig({ owner, repo, token, path });
             document.getElementById('gh-settings-modal')?.remove();
             showToast('Connecting to GitHub…');
@@ -1063,6 +1122,68 @@
                 loadDate(currentDateStr);
                 showToast('GitHub sync connected');
             }
+        }
+
+        // ---------- Profile / Access Control ----------
+        function loadProfile() {
+            try {
+                const raw = localStorage.getItem(PROFILE_KEY);
+                const parsed = raw ? JSON.parse(raw) : null;
+                userProfile = (parsed && PROFILE_LABELS[parsed.profile])
+                    ? { name: parsed.name || '', profile: parsed.profile }
+                    : null;
+            } catch (e) {
+                userProfile = null;
+            }
+        }
+
+        function saveProfile(profile) {
+            userProfile = profile;
+            try {
+                localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+            } catch (e) {
+                console.warn('Could not persist profile', e);
+            }
+        }
+
+        // Devices that never configured a profile default to Demo — full visual parity with Admin,
+        // but destructive/migration actions stay inert until someone deliberately escalates.
+        function getProfile() { return (userProfile && userProfile.profile) || 'demo'; }
+        function getProfileName() { return (userProfile && userProfile.name) || ''; }
+        function isAdmin() { return getProfile() === 'admin'; }
+
+        // Visibility: Field Ops hides the data-tools row entirely; Admin and Demo both show it
+        // (Demo shows it but the underlying functions no-op — see canUseDataTools()).
+        function shouldShowDataTools() { return getProfile() !== 'fieldops'; }
+
+        // Functional gate: only Admin can actually execute Import / Clear / Export-JSON.
+        function canUseDataTools() { return isAdmin(); }
+
+        // PIN is only relevant when actually escalating TO admin from a non-admin current state —
+        // re-saving while already admin, or de-escalating away from admin, never prompts for it.
+        function requiresPinToEscalate(newProfileValue) {
+            return newProfileValue === 'admin' && getProfile() !== 'admin';
+        }
+
+        function escapeHtml(str) {
+            return String(str ?? '').replace(/[&<>"']/g, ch => (
+                { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+            ));
+        }
+
+        // Returns a human-readable "logged by" string, or null for legacy entries with no loggedBy at all.
+        function formatLoggedBy(entry) {
+            if (!entry || !entry.loggedBy || !entry.loggedBy.profile) return null;
+            const label = PROFILE_LABELS[entry.loggedBy.profile] || entry.loggedBy.profile;
+            const name = (entry.loggedBy.name || '').trim();
+            return name ? `${name} (${label})` : label;
+        }
+
+        // Reflects current profile onto DOM elements whose visibility depends on it.
+        // Safe to call any time — touches the element directly regardless of which view tab is active.
+        function applyProfilePermissions() {
+            const btn = document.getElementById('export-json-btn');
+            if (btn) btn.classList.toggle('hidden', !shouldShowDataTools());
         }
 
         // ---------- Custom Reasons Persistence ----------
@@ -1419,6 +1540,7 @@
                     notes: { robotic: '', tieplate: '', truck: '' },
                     reasons: { robotic: [], tieplate: [], truck: [] },
                     comments: { unique: '', unsafe: '', new: '' },
+                    loggedBy: { name: getProfileName(), profile: getProfile() },
                     last_updated: null
                 };
             }
@@ -1486,6 +1608,7 @@
                     unsafe: document.getElementById('comment-unsafe').value.trim(),
                     new: document.getElementById('comment-new').value.trim()
                 },
+                loggedBy: { name: getProfileName(), profile: getProfile() },
                 last_updated: new Date().toISOString()
             };
             
@@ -1583,14 +1706,17 @@
                 const row = document.createElement('div');
                 row.className = `history-row bg-white border border-slate-200 rounded-3xl px-4 py-3 flex items-center cursor-pointer active:bg-slate-50`;
                 
-                const unitLabel = entry.unit ? `<span class="ml-2 text-[11px] font-medium px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full">${entry.unit}</span>` : '';
-                
+                const unitLabel = entry.unit ? `<span class="ml-2 text-[11px] font-medium px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full">${escapeHtml(entry.unit)}</span>` : '';
+                const loggedByLabel = formatLoggedBy(entry);
+                const loggedByBadge = loggedByLabel ? `<span class="ml-2 text-[11px] font-medium px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full">${escapeHtml(loggedByLabel)}</span>` : '';
+
                 row.innerHTML = `
                     <div class="flex-1 min-w-0" onclick="loadHistoryEntry('${dateStr}')">
                         <div class="flex items-baseline justify-between">
                             <div class="flex items-center flex-wrap gap-y-1">
                                 <span class="font-semibold text-slate-900">${formatDisplayDate(dateStr)}</span>
                                 ${unitLabel}
+                                ${loggedByBadge}
                             </div>
                             <div class="text-right">
                                 <span class="font-extrabold text-xl tabular-nums text-slate-900">${total}</span>
@@ -1964,13 +2090,15 @@
             }
             
             // Daily totals CSV
-            let csv = 'Date,Robotic System,Tie Plate Setter,Truck Malfunction,Total\n';
+            let csv = 'Date,Robotic System,Tie Plate Setter,Truck Malfunction,Total,Logged By Name,Logged By Profile\n';
             dates.forEach(d => {
                 const e = currentData[d];
                 const r = e.tallies.robotic || 0;
                 const t = e.tallies.tieplate || 0;
                 const u = e.tallies.truck || 0;
-                csv += `${d},${r},${t},${u},${r + t + u}\n`;
+                const safeName = `"${(e.loggedBy?.name || '').replace(/"/g, '""')}"`;
+                const loggedByProfile = e.loggedBy?.profile ? (PROFILE_LABELS[e.loggedBy.profile] || e.loggedBy.profile) : '';
+                csv += `${d},${r},${t},${u},${r + t + u},${safeName},${loggedByProfile}\n`;
             });
             
             // Reason frequency section
@@ -2012,6 +2140,10 @@
         
         // Export all data as JSON
         function exportAllData() {
+            if (!canUseDataTools()) {
+                showToast(`Not available in ${PROFILE_LABELS[getProfile()]} mode`, true);
+                return;
+            }
             const dataStr = JSON.stringify(currentData, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -2041,9 +2173,10 @@
 
             // --- Sheet 1: Daily Summary ---
             const summaryRows = [
-                ['Date', 'Unit', 'Robotic System', 'Tie Plate Setter', 'Truck Malfunction', 'Total', 
+                ['Date', 'Unit', 'Robotic System', 'Tie Plate Setter', 'Truck Malfunction', 'Total',
                  'Notes - Robotic', 'Notes - Tie Plate', 'Notes - Truck',
-                 'Unique / Other locations?', 'Unsafe?', 'New objects for robot?', 'Last Updated']
+                 'Unique / Other locations?', 'Unsafe?', 'New objects for robot?',
+                 'Logged By (Name)', 'Logged By (Profile)', 'Last Updated']
             ];
 
             dates.forEach(d => {
@@ -2061,6 +2194,8 @@
                     e.comments?.unique || '',
                     e.comments?.unsafe || '',
                     e.comments?.new || '',
+                    e.loggedBy?.name || '',
+                    e.loggedBy?.profile ? (PROFILE_LABELS[e.loggedBy.profile] || e.loggedBy.profile) : '',
                     e.last_updated || ''
                 ]);
             });
@@ -2090,7 +2225,9 @@
             ws1['!cols'] = [
                 { wch: 12 }, { wch: 16 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 8 },
                 { wch: 40 }, { wch: 40 }, { wch: 40 },
-                { wch: 30 }, { wch: 25 }, { wch: 30 }, { wch: 22 }
+                { wch: 30 }, { wch: 25 }, { wch: 30 },
+                { wch: 16 }, { wch: 12 },
+                { wch: 22 }
             ];
             XLSX.utils.book_append_sheet(wb, ws1, 'Daily Summary');
 
@@ -2108,6 +2245,10 @@
         
         // Import data (merge)
         function importData() {
+            if (!canUseDataTools()) {
+                showToast(`Not available in ${PROFILE_LABELS[getProfile()]} mode`, true);
+                return;
+            }
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.json,application/json';
@@ -2199,7 +2340,8 @@
                     </div>
                     
                     <div style="margin-bottom:16px; font-size:14px;">
-                        <strong>Unit in Operation:</strong> ${entry.unit || '<em style="color:#94a3b8;">Not selected</em>'}
+                        <strong>Unit in Operation:</strong> ${entry.unit ? escapeHtml(entry.unit) : '<em style="color:#94a3b8;">Not selected</em>'}
+                        ${formatLoggedBy(entry) ? ` &nbsp;|&nbsp; <strong>Logged by:</strong> ${escapeHtml(formatLoggedBy(entry))}` : ''}
                     </div>
                     
                     <table>
@@ -2273,6 +2415,10 @@
 
         // Clear all data (memory + localStorage when available)
         function clearAllData() {
+            if (!canUseDataTools()) {
+                showToast(`Not available in ${PROFILE_LABELS[getProfile()]} mode`, true);
+                return;
+            }
             if (!confirm('Clear ALL data? This cannot be recovered.')) return;
             
             currentData = {};
@@ -2300,28 +2446,38 @@
         
         // Show menu (more actions)
         function showMenu() {
+            const showDataTools = shouldShowDataTools(); // false only for fieldops
+            const signedInLine = `
+                <div class="px-4 pb-2 -mt-1 text-[11px] text-slate-400 flex items-center gap-x-1.5">
+                    <i class="fa-solid fa-id-badge"></i>
+                    <span>${getProfileName() ? escapeHtml(getProfileName()) + ' — ' : ''}${PROFILE_LABELS[getProfile()]}</span>
+                </div>`;
+            const importRow = showDataTools ? `
+                <button onclick="importData(); document.getElementById('more-actions-modal').remove();"
+                        class="w-full flex items-center gap-x-3 px-4 py-3.5 active:bg-slate-100 rounded-2xl text-left">
+                    <i class="fa-solid fa-upload w-5 text-slate-500"></i>
+                    <span class="font-medium">Import Data from JSON</span>
+                </button>` : '';
+            const clearRow = showDataTools ? `
+                <button onclick="clearAllData(); document.getElementById('more-actions-modal').remove();"
+                        class="w-full flex items-center gap-x-3 px-4 py-3.5 active:bg-slate-100 rounded-2xl text-left text-red-600">
+                    <i class="fa-solid fa-trash w-5"></i>
+                    <span class="font-medium">Clear All Data</span>
+                </button>` : '';
+
             const menuHTML = `
                 <div id="more-actions-modal" class="fixed inset-0 bg-black/40 z-[200] flex items-end" onclick="this.remove()">
                     <div class="bg-white w-full rounded-t-3xl p-2 shadow-2xl" onclick="event.stopImmediatePropagation()">
-                        <div class="px-4 pt-3 pb-2 text-xs font-bold text-slate-500">MORE ACTIONS</div>
+                        <div class="px-4 pt-3 text-xs font-bold text-slate-500">MORE ACTIONS</div>
+                        ${signedInLine}
 
                         <button onclick="document.getElementById('more-actions-modal').remove(); openGhSettings();"
                                 class="w-full flex items-center gap-x-3 px-4 py-3.5 active:bg-slate-100 rounded-2xl text-left">
                             <i class="fa-brands fa-github w-5 text-slate-700"></i>
-                            <span class="font-medium">GitHub Sync Settings</span>
+                            <span class="font-medium">Profile &amp; Sync Settings</span>
                         </button>
-
-                        <button onclick="importData(); document.getElementById('more-actions-modal').remove();"
-                                class="w-full flex items-center gap-x-3 px-4 py-3.5 active:bg-slate-100 rounded-2xl text-left">
-                            <i class="fa-solid fa-upload w-5 text-slate-500"></i>
-                            <span class="font-medium">Import Data from JSON</span>
-                        </button>
-
-                        <button onclick="clearAllData(); document.getElementById('more-actions-modal').remove();"
-                                class="w-full flex items-center gap-x-3 px-4 py-3.5 active:bg-slate-100 rounded-2xl text-left text-red-600">
-                            <i class="fa-solid fa-trash w-5"></i>
-                            <span class="font-medium">Clear All Data</span>
-                        </button>
+                        ${importRow}
+                        ${clearRow}
 
                         <div class="h-px bg-slate-100 my-1 mx-2"></div>
 
@@ -2378,6 +2534,8 @@
             loadData();
             loadCustomReasons();
             loadDeletedDates();
+            loadProfile();
+            applyProfilePermissions();
             rebuildAllReasonSelects();
             
             // Set initial date to today

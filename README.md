@@ -34,17 +34,35 @@ Site URL: **https://cotyc-bbrailtech.github.io/BB-tally/**
 ## 3. Connect the app on each phone
 
 1. Open the Pages URL on the phone  
-2. Tap **⋯** → **GitHub Sync Settings**  
-3. Enter:
+2. Tap **⋯** → **Profile & Sync Settings**  
+3. Enter your name and pick a device profile (see below)
+4. If this device should sync to the shared repo, also enter:
    - Owner: `cotyc-bbrailtech`  
    - Repo: `BB-tally`  
    - Token: *(paste)*  
    - Path: `data/tallies.json`  
-4. **Save & Connect**  
+   (leave all three blank to keep the device local-only)
+5. **Save**
 
 Badge shows **GitHub saved** when sync is working.
 
 Token stays only on that phone (not committed to the repo). Prefer a **private** repo.
+
+## Device profiles
+
+Every device is one of three profiles (a UI-level convenience, not real security — there's no backend to enforce anything against):
+
+| Profile | Import / Clear / Export-JSON |
+|---------|-------------------------------|
+| **Admin** | Visible and functional |
+| **Field Ops** | Not shown at all — only Export to Excel and the Insights export remain |
+| **Demo** | Shown, but inert (a "not available" toast instead of running) |
+
+Devices that haven't set a profile yet default to **Demo** — safe out of the box, nothing destructive can happen until someone deliberately sets a device to Admin or Field Ops.
+
+Switching a device **to** Admin requires a shared PIN, hardcoded as `ADMIN_PIN` near the top of `index.html`'s `<script>` block. Change it there before/after launch — it's a plain constant in the page source, so treat it as a deterrent against casual switching, not a real secret.
+
+Whoever's name + profile last saved a given day's entry shows up in the History tab, the printed report, and both exports ("Logged By").
 
 ## Local file
 
