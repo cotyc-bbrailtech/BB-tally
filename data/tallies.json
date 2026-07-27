@@ -3,12 +3,12 @@
     "unit": "Raiv-T3 / T-51",
     "tallies": {
       "robotic": 2,
-      "tieplate": 2,
+      "tieplate": 3,
       "truck": 0
     },
     "notes": {
       "robotic": "Robot arm place or alignment error",
-      "tieplate": "Flipper mechanism malfunction",
+      "tieplate": "Flipper mechanism malfunction. Plate misfeed or improper seating in setter",
       "truck": ""
     },
     "reasons": {
@@ -18,7 +18,8 @@
       ],
       "tieplate": [
         "Flipper mechanism malfunction",
-        "Flipper mechanism malfunction"
+        "Flipper mechanism malfunction",
+        "Plate misfeed or improper seating in setter"
       ],
       "truck": []
     },
@@ -27,6 +28,6 @@
       "unsafe": "",
       "new": ""
     },
-    "last_updated": "2026-07-27T17:12:55.699Z"
+    "last_updated": "2026-07-27T17:13:00.366Z"
   }
 }
