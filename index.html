@@ -717,11 +717,21 @@
         let ghConfig = null; // { owner, repo, token, path }
         let ghFileSha = null; // current SHA of data/tallies.json on GitHub
 
+        // Repo was renamed from cotycoots-tech/bb-tally-board to cotyc-bbrailtech/BB-tally.
+        // Devices that saved sync settings before that rename would otherwise keep pointing
+        // at the old repo forever (a saved config doesn't pick up new code defaults on its own).
+        const STALE_GH_REPO = { owner: 'cotycoots-tech', repo: 'bb-tally-board' };
+        const CURRENT_GH_REPO = { owner: 'cotyc-bbrailtech', repo: 'BB-tally' };
+
         function loadGhConfig() {
             try {
                 const raw = localStorage.getItem(GH_CONFIG_KEY);
                 ghConfig = raw ? JSON.parse(raw) : null;
                 if (ghConfig && (!ghConfig.owner || !ghConfig.repo || !ghConfig.token)) ghConfig = null;
+                if (ghConfig && ghConfig.owner === STALE_GH_REPO.owner && ghConfig.repo === STALE_GH_REPO.repo) {
+                    ghConfig = { ...ghConfig, ...CURRENT_GH_REPO };
+                    localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(ghConfig));
+                }
             } catch (e) {
                 ghConfig = null;
             }
