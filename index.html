@@ -832,6 +832,26 @@
             }
         }
 
+        /** Pull latest shared tallies and refresh whichever read-only view is on screen.
+         *  Never touches the Tally view's fields so it can't clobber an in-progress edit. */
+        async function refreshFromCloud() {
+            if (!ghConfig) return;
+            const ok = await initCloud();
+            if (!ok) return;
+            if (!document.getElementById('history-view').classList.contains('hidden')) {
+                renderHistory();
+            }
+            if (!document.getElementById('insights-view').classList.contains('hidden')) {
+                renderInsights();
+            }
+        }
+
+        let cloudPollTimer = null;
+        function startCloudPolling() {
+            if (cloudPollTimer) clearInterval(cloudPollTimer);
+            cloudPollTimer = setInterval(refreshFromCloud, 30000);
+        }
+
         function loadData() {
             if (!persistenceAvailable) {
                 currentData = {};
@@ -1446,11 +1466,13 @@
                 document.getElementById('nav-history').classList.add('active', 'text-slate-900');
                 document.getElementById('nav-history').classList.remove('text-slate-500');
                 renderHistory();
+                refreshFromCloud();
             } else if (view === 'insights') {
                 document.getElementById('insights-view').classList.remove('hidden');
                 document.getElementById('nav-insights').classList.add('active', 'text-slate-900');
                 document.getElementById('nav-insights').classList.remove('text-slate-500');
                 renderInsights();
+                refreshFromCloud();
             }
         }
         
@@ -2281,6 +2303,13 @@
                         renderHistory();
                     }
                 }
+                // Keep History/Insights in sync with other connected devices
+                startCloudPolling();
+            });
+
+            // Pull fresh data whenever the app regains focus (phone unlock, tab switch back)
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) refreshFromCloud();
             });
             
             // Seed demo data if completely empty (first run)
