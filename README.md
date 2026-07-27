@@ -15,19 +15,19 @@ Connect once: **⋯ menu → GitHub Sync Settings**
 
 ## 1. Enable GitHub Pages (free site)
 
-1. Open https://github.com/cotycoots-tech/bb-tally-board  
+1. Open https://github.com/cotyc-bbrailtech/BB-tally  
 2. **Settings → Pages**  
 3. Source: **Deploy from a branch**  
 4. Branch: `main` / folder: `/ (root)`  
 5. Save  
 
-Site URL: **https://cotycoots-tech.github.io/bb-tally-board/**
+Site URL: **https://cotyc-bbrailtech.github.io/BB-tally/**
 
 ## 2. Create a token (once)
 
 1. GitHub → **Settings → Developer settings → Personal access tokens → Fine-grained tokens**  
 2. **Generate**  
-   - Repository access: only **bb-tally-board**  
+   - Repository access: only **BB-tally**  
    - Permissions → **Contents: Read and write**  
 3. Copy the token  
 
@@ -36,8 +36,8 @@ Site URL: **https://cotycoots-tech.github.io/bb-tally-board/**
 1. Open the Pages URL on the phone  
 2. Tap **⋯** → **GitHub Sync Settings**  
 3. Enter:
-   - Owner: `cotycoots-tech`  
-   - Repo: `bb-tally-board`  
+   - Owner: `cotyc-bbrailtech`  
+   - Repo: `BB-tally`  
    - Token: *(paste)*  
    - Path: `data/tallies.json`  
 4. **Save & Connect**  

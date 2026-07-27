@@ -952,7 +952,7 @@
 
         function openGhSettings() {
             loadGhConfig();
-            const existing = ghConfig || { owner: 'cotycoots-tech', repo: 'bb-tally-board', token: '', path: 'data/tallies.json' };
+            const existing = ghConfig || { owner: 'cotyc-bbrailtech', repo: 'BB-tally', token: '', path: 'data/tallies.json' };
             const html = `
                 <div class="fixed inset-0 bg-black/50 z-[200] flex items-end sm:items-center justify-center" id="gh-settings-modal">
                     <div class="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto" onclick="event.stopImmediatePropagation()">
@@ -967,9 +967,9 @@
                         </div>
                         <p class="text-xs text-slate-500 mb-4">Saves every tally into a file in your GitHub repo. Create a fine-grained token with <b>Contents: Read and write</b> on this repo.</p>
                         <label class="text-[10px] font-bold text-slate-500 block mb-1">Repo owner</label>
-                        <input id="gh-owner" value="${existing.owner || ''}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="cotycoots-tech">
+                        <input id="gh-owner" value="${existing.owner || ''}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="cotyc-bbrailtech">
                         <label class="text-[10px] font-bold text-slate-500 block mb-1">Repo name</label>
-                        <input id="gh-repo" value="${existing.repo || ''}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="bb-tally-board">
+                        <input id="gh-repo" value="${existing.repo || ''}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="BB-tally">
                         <label class="text-[10px] font-bold text-slate-500 block mb-1">Personal access token</label>
                         <input id="gh-token" type="password" value="${existing.token || ''}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="github_pat_…">
                         <label class="text-[10px] font-bold text-slate-500 block mb-1">File path in repo</label>
