@@ -33,17 +33,19 @@
   "2026-07-20": {
     "unit": "Raiv-T1 / T-53",
     "tallies": {
-      "robotic": 0,
+      "robotic": 1,
       "tieplate": 0,
       "truck": 0
     },
     "notes": {
-      "robotic": "",
+      "robotic": "False positive detection (foreign object or debris)",
       "tieplate": "",
       "truck": ""
     },
     "reasons": {
-      "robotic": [],
+      "robotic": [
+        "False positive detection (foreign object or debris)"
+      ],
       "tieplate": [],
       "truck": []
     },
@@ -52,6 +54,6 @@
       "unsafe": "",
       "new": ""
     },
-    "last_updated": "2026-07-27T17:23:32.973Z"
+    "last_updated": "2026-07-27T17:23:34.857Z"
   }
 }
