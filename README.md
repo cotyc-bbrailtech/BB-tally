@@ -54,9 +54,25 @@ Open `index.html` in a browser, or:
 python3 -m http.server 8080
 ```
 
+## Styling (Tailwind CSS)
+
+Tailwind is compiled ahead of time into `assets/tailwind.css` and committed — the
+page just links that file, no CDN script and no build step at load time.
+
+If you add or change any Tailwind classes in `index.html`, rebuild before committing:
+
+```bash
+npm install        # once, installs Tailwind CSS + its CLI as dev dependencies
+npm run build:css  # regenerates assets/tailwind.css from index.html's classes
+```
+
+`npm run watch:css` rebuilds automatically while you edit.
+
 ## Files that matter
 
 - `index.html` — the app  
+- `assets/tailwind.css` — generated CSS, rebuild with `npm run build:css` after changing classes (see above)
+- `src/input.css` — Tailwind's build input (just an `@import "tailwindcss";`)
 - `data/tallies.json` — shared tallies, synced directly to this repo via the GitHub Contents API (created on first save)  
 
 ## License

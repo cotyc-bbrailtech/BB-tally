@@ -1,0 +1,23 @@
+{
+  "name": "bb-tally",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mobile field app for logging human interventions on automated railway systems.",
+  "scripts": {
+    "build:css": "tailwindcss -i ./src/input.css -o ./assets/tailwind.css --minify",
+    "watch:css": "tailwindcss -i ./src/input.css -o ./assets/tailwind.css --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cotyc-bbrailtech/BB-tally.git"
+  },
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cotyc-bbrailtech/BB-tally/issues"
+  },
+  "homepage": "https://github.com/cotyc-bbrailtech/BB-tally#readme",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}
