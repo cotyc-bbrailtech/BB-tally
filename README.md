@@ -2,7 +2,7 @@
 
 Mobile field app for logging human interventions on automated railway systems.
 
-**Free hosting + free storage via GitHub only — no Render.**
+**Free hosting + free storage via GitHub only.**
 
 ## How storage works
 
@@ -57,7 +57,7 @@ python3 -m http.server 8080
 ## Files that matter
 
 - `index.html` — the app  
-- `data/tallies.json` — live shared tallies (updated by the app via API)  
+- `data/tallies.json` — shared tallies, synced directly to this repo via the GitHub Contents API (created on first save)  
 
 ## License
 
