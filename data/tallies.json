@@ -69,7 +69,7 @@
     "unit": "Raiv-T1 / T-53",
     "tallies": {
       "robotic": 0,
-      "tieplate": 3,
+      "tieplate": 6,
       "truck": 0
     },
     "notes": {
@@ -82,6 +82,10 @@
       "tieplate": [
         "Bent, damaged, or malformed tie plate",
         "Bent, damaged, or malformed tie plate",
+        "Bent, damaged, or malformed tie plate",
+        "Bent, damaged, or malformed tie plate",
+        "Bent, damaged, or malformed tie plate",
+        "Bent, damaged, or malformed tie plate",
         "Bent, damaged, or malformed tie plate"
       ],
       "truck": []
@@ -91,6 +95,6 @@
       "unsafe": "",
       "new": ""
     },
-    "last_updated": "2026-07-27T17:25:16.942Z"
+    "last_updated": "2026-07-27T17:25:21.182Z"
   }
 }
