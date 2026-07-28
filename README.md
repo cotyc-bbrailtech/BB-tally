@@ -15,16 +15,24 @@ Connect once: **⋯ menu → GitHub Sync Settings**
 
 ## Multi-device data integrity
 
-Every day+unit combination is its own entry (`"2026-07-28|Raiv-T1 / T-53"`), so two
-crews working two different units on the same date no longer share — and silently
-overwrite — one entry. Within a single entry, tally counts and reason picks are
-recorded as an append-only log (add/remove, never a bare number), so two devices'
-independent reason picks on the same day both survive a sync instead of one
-clobbering the other; unit/notes/comments still resolve last-write-wins, but
-`saveCurrent()` now warns you (who, when) if someone else's save landed on that
-exact entry since you last opened it, instead of silently overwriting it. A GitHub
-sync conflict (two devices pushing at once) properly re-fetches and re-merges
-before retrying, rather than blindly resending stale data.
+Every day+unit+name combination is its own entry (`"2026-07-28|Raiv-T1 / T-53|Coty"`),
+so two crews working two different units on the same date, or two crew members
+logging the same unit on the same day, no longer share — and silently overwrite —
+one entry; each person gets their own record. Within a single entry, tally counts
+and reason picks are recorded as an append-only log (add/remove, never a bare
+number), so two devices' independent reason picks on the same day both survive a
+sync instead of one clobbering the other; unit/notes/comments still resolve
+last-write-wins within that one entry, which only matters now if the same person
+edits from two devices at once (or two people happen to share a name) — in that
+narrow case, `saveCurrent()` still warns you (who, when) if someone else's save
+landed on that exact entry since you last opened it. Since separate crew members'
+entries can no longer collide, tapping **SAVE ENTRY** instead shows a lighter
+"heads up" — if someone else recently logged the same unit/date, you'll see who
+and when, with the option to save anyway. A device with no name set falls back to
+a shared `(unassigned name)` bucket (a banner nudges you to set one, since two
+unnamed devices would collide the same way units used to). A GitHub sync conflict
+(two devices pushing at once) properly re-fetches and re-merges before retrying,
+rather than blindly resending stale data.
 
 ## 1. Enable GitHub Pages (free site)
 

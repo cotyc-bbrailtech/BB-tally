@@ -167,9 +167,9 @@
         <div class="pt-5 pb-3 flex items-end justify-between no-print">
             <div>
                 <div class="flex items-center gap-x-2">
-                    <input type="date" id="current-date" 
+                    <input type="date" id="current-date"
                            class="text-3xl font-semibold bg-transparent border-0 p-0 focus:outline-none focus:ring-0 text-slate-900 cursor-pointer"
-                           onchange="loadDate(this.value)">
+                           onchange="userChangedDate(this.value)">
                     <button onclick="goToToday()" 
                             class="px-3 py-1 text-xs font-medium bg-white shadow-sm border border-slate-200 text-slate-600 hover:bg-slate-50 active:bg-slate-100 rounded-2xl flex items-center gap-x-1.5 transition-colors">
                         <i class="fa-solid fa-calendar-day text-orange-500"></i>
@@ -203,6 +203,13 @@
                 <option value="Raiv-T2 / T-57">Raiv-T2 / T-57</option>
                 <option value="Raiv-T3 / T-51">Raiv-T3 / T-51</option>
             </select>
+        </div>
+
+        <!-- Blank-name nudge: shown whenever the device's profile name isn't set, since name now
+             partitions entries — two unnamed devices on the same unit/date silently share one entry. -->
+        <div id="blank-name-banner" class="hidden mb-4 no-print bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-2xl px-4 py-3 items-center justify-between gap-x-3">
+            <span><i class="fa-solid fa-user-slash mr-1.5"></i>You haven't set your name — your entries may get grouped with other unnamed devices.</span>
+            <button onclick="openGhSettings()" class="shrink-0 font-semibold underline decoration-amber-400 hover:text-amber-900">Set it</button>
         </div>
 
         <!-- TALLY VIEW -->
@@ -413,7 +420,7 @@
 
             <!-- Action Buttons -->
             <div class="mt-5 grid grid-cols-2 gap-3 no-print">
-                <button onclick="saveCurrent(true)"
+                <button onclick="saveEntryButtonClicked()"
                         class="flex items-center justify-center gap-x-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition-colors text-white font-semibold py-3.5 rounded-3xl text-sm shadow-sm">
                     <i class="fa-solid fa-save"></i>
                     <span>SAVE ENTRY</span>
@@ -706,13 +713,18 @@
         const REASON_REGISTRY_KEY = 'bb_tally_reason_registry_v1';
         const REASON_REGISTRY_FIELD = '_reasonRegistry'; // sibling key alongside date entries in the synced GitHub JSON — never a valid date, so the day-iteration loops skip it
         const UNASSIGNED_UNIT = '(unassigned unit)'; // fallback unit label so a day-entry key is always well-formed even with no unit picked
+        const UNASSIGNED_NAME = '(unassigned name)'; // fallback name label so a day-entry key is always well-formed even with no profile name set
         let currentData = {};
         let currentDateStr = '';
         let chartInstance = null;
         let saveTimeout = null;
         let customReasons = { robotic: [], tieplate: [], truck: [] };
         let deletedDates = {}; // { 'dateStr|unit': isoTimestampOfDeletion } — tombstones so a cloud merge can't resurrect a deleted entry
-        let lastSeenUpdated = {}; // session-local: { 'dateStr|unit': last last_updated this session actually saw } — powers the "someone else edited this" warning
+        let lastSeenUpdated = {}; // session-local: { 'dateStr|unit|name': last last_updated this session actually saw } — powers the "someone else edited this" warning
+        let currentEntryNameOverride = null; // null = follow the live device profile name (a fresh entry, or a date/unit just navigated to);
+        // non-null = pinned to a specific name, set only by loadHistoryEntry() when opening a History row that may
+        // belong to someone else — so continuing to edit and saving writes back into THAT person's record instead
+        // of forking a new one under whoever the device's live profile currently says.
         let userProfile = null; // { name, profile: 'admin'|'fieldops'|'demo'|'developer' } | null — null means never configured, defaults to Demo
         let reasonRegistry = null; // { _updated, robotic:[{id,label,value,icon}], tieplate:[...], truck:[...] } — populated by loadReasonRegistry() at boot
         let developerUnlocked = false; // in-memory only, never persisted — re-locks whenever you leave the Dashboard tab
@@ -1005,6 +1017,25 @@
             return store;
         }
 
+        // Rekeys any legacy "date|unit" (exactly one pipe) entry to the compound "date|unit|name"
+        // scheme in place, sourced from that entry's own loggedBy.name — so a pre-existing entry
+        // keeps its own last-known attribution as its key's name segment instead of colliding with
+        // whatever THIS device's live profile happens to be when the migration runs. Gated on an
+        // exact pipe count of 1 (not "already has a name" via includes('|')) so it can never misfire
+        // on a not-yet-migrated bare-date key regardless of call order relative to
+        // rekeyLegacyDateOnlyEntries — safe/cheap to call repeatedly.
+        function rekeyLegacyUnitOnlyEntries(store) {
+            Object.keys(store).forEach(key => {
+                if (key === REASON_REGISTRY_FIELD) return;
+                if ((key.match(/\|/g) || []).length !== 1) return;
+                const entry = store[key];
+                const name = ((entry && entry.loggedBy && entry.loggedBy.name) || '').trim() || UNASSIGNED_NAME;
+                store[key + '|' + name] = entry;
+                delete store[key];
+            });
+            return store;
+        }
+
         // Union-merge one category's reasonLog by id, tombstones sticky: a deletion recorded by
         // either side always wins over that same id merely "still appearing alive" on the other —
         // that's missing information on the other side, not a conflicting claim, so it's never
@@ -1079,11 +1110,18 @@
                 const rTime = r.last_updated ? Date.parse(r.last_updated) : 0;
                 // A legacy bare-date tombstone (from before unit-partitioning) should still suppress
                 // every unit-partitioned descendant of that date, since we can't know which unit it
-                // originally applied to — conservative/safe direction.
-                const legacyDateTombstone = deletedDates[date.split('|')[0]] ? Date.parse(deletedDates[date.split('|')[0]]) : 0;
+                // originally applied to — conservative/safe direction. Same reasoning one level down:
+                // a legacy "date|unit" tombstone (from before name-partitioning) should still suppress
+                // every name-partitioned descendant of that date+unit.
+                const parts = date.split('|');
+                const bareDateKey = parts[0];
+                const unitOnlyKey = parts.length >= 2 ? parts[0] + '|' + parts[1] : null;
+                const legacyDateTombstone = deletedDates[bareDateKey] ? Date.parse(deletedDates[bareDateKey]) : 0;
+                const legacyUnitTombstone = unitOnlyKey && deletedDates[unitOnlyKey] ? Date.parse(deletedDates[unitOnlyKey]) : 0;
                 const deletedAt = Math.max(
                     deletedDates[date] ? Date.parse(deletedDates[date]) : 0,
-                    legacyDateTombstone
+                    legacyDateTombstone,
+                    legacyUnitTombstone
                 );
                 if (deletedAt) {
                     if (deletedAt >= rTime) {
@@ -1093,7 +1131,8 @@
                     }
                     // Remote has a newer edit than our deletion — someone re-added it, so un-delete here too.
                     if (deletedDates[date]) { delete deletedDates[date]; tombstonesChanged = true; }
-                    if (deletedDates[date.split('|')[0]]) { delete deletedDates[date.split('|')[0]]; tombstonesChanged = true; }
+                    if (deletedDates[bareDateKey]) { delete deletedDates[bareDateKey]; tombstonesChanged = true; }
+                    if (unitOnlyKey && deletedDates[unitOnlyKey]) { delete deletedDates[unitOnlyKey]; tombstonesChanged = true; }
                 }
                 merged[date] = mergeDayEntry(l, r);
             });
@@ -1140,6 +1179,7 @@
                 ghFileSha = body.sha;
                 const decoded = JSON.parse(atob(body.content.replace(/\n/g, '')));
                 rekeyLegacyDateOnlyEntries(decoded);
+                rekeyLegacyUnitOnlyEntries(decoded);
                 mergeReasonRegistryFromRemote(decoded && decoded[REASON_REGISTRY_FIELD]);
                 const { merged, tombstonesChanged } = mergeStores(currentData, decoded);
                 if (tombstonesChanged) saveDeletedDates();
@@ -1277,6 +1317,7 @@
                     // snapshot, since that's exactly what silently destroyed the other side's write before.
                     const remote = await fetchRemoteStore();
                     rekeyLegacyDateOnlyEntries(remote.store);
+                    rekeyLegacyUnitOnlyEntries(remote.store);
                     mergeReasonRegistryFromRemote(remote.store[REASON_REGISTRY_FIELD]);
                     const { merged, tombstonesChanged } = mergeStores(currentData, remote.store);
                     if (tombstonesChanged) saveDeletedDates();
@@ -1497,6 +1538,13 @@
                 badge.title = label;
             }
 
+            const nameBanner = document.getElementById('blank-name-banner');
+            if (nameBanner) {
+                const blank = !getProfileName().trim();
+                nameBanner.classList.toggle('hidden', !blank);
+                nameBanner.classList.toggle('flex', blank);
+            }
+
             const devVisible = isDeveloper();
             const devNavBtn = document.getElementById('nav-dashboard');
             if (devNavBtn) {
@@ -1625,6 +1673,13 @@
             lastSeenUpdated[key] = entry.last_updated;
         }
 
+        // Fires when the date is changed by the user (date picker, not internal navigation) —
+        // implies "show/create my own entry for this date," not "keep following someone else's."
+        function userChangedDate(dateStr) {
+            currentEntryNameOverride = null;
+            loadDate(dateStr);
+        }
+
         // Fires when the unit dropdown changes — it now determines WHICH entry is being viewed,
         // not just a label on whatever entry happened to load, so switching it reloads the form.
         function onUnitChange() {
@@ -1633,6 +1688,7 @@
                 saveTimeout = null;
                 saveCurrent();
             }
+            currentEntryNameOverride = null; // switching units — show/create MY OWN entry for the new unit
             loadDate(currentDateStr);
         }
         
@@ -1804,15 +1860,20 @@
             selectReason(text);
         }
 
-        // ---------- Day-entry keying (date + unit) and derived-tally helpers ----------
+        // ---------- Day-entry keying (date + unit + name) and derived-tally helpers ----------
         // Two different units worked concurrently on the same calendar date used to collide into
-        // one shared entry. Keying by date+unit keeps them separate; the merge algorithm, Insights
+        // one shared entry; two different crew members on the same unit/date used to collide too.
+        // Keying by date+unit+name keeps them all separate; the merge algorithm, Insights
         // aggregation, and reason-usage code are all already key-shape-agnostic (they iterate
         // Object.keys(currentData) and never parse the key itself), so this needs no changes there.
+        function liveEntryName() {
+            return (getProfileName() || '').trim() || UNASSIGNED_NAME;
+        }
         function currentKey() {
             const unitSelect = document.getElementById('unit-select');
             const unit = (unitSelect && unitSelect.value) || UNASSIGNED_UNIT;
-            return currentDateStr + '|' + unit;
+            const name = currentEntryNameOverride || liveEntryName();
+            return currentDateStr + '|' + unit + '|' + name;
         }
 
         function generateLogEntryId(category) {
@@ -2070,7 +2131,52 @@
                 renderHistory();
             }
         }
-        
+
+        // "Recently" window for the cross-person awareness check below — since the lookup is already
+        // scoped to the exact same date+unit, this window's job is just to distinguish "someone logged
+        // this unit a little while ago" (worth a heads up) from "someone logged it many hours ago"
+        // (stale, not a useful live-awareness signal).
+        const RECENT_CROSS_PERSON_WINDOW_MS = 2 * 60 * 60 * 1000;
+
+        // Looks for any OTHER name-keyed entry sharing this exact date+unit, touched recently.
+        function findRecentOtherLoggerEntry() {
+            const unitSelect = document.getElementById('unit-select');
+            const unit = (unitSelect && unitSelect.value) || UNASSIGNED_UNIT;
+            const myName = currentEntryNameOverride || liveEntryName();
+            const prefix = currentDateStr + '|' + unit + '|';
+            const cutoff = Date.now() - RECENT_CROSS_PERSON_WINDOW_MS;
+            let mostRecent = null;
+            Object.keys(currentData).forEach(k => {
+                if (k === REASON_REGISTRY_FIELD || !k.startsWith(prefix)) return;
+                if (k.slice(prefix.length) === myName) return; // this device's own entry
+                const entry = currentData[k];
+                const t = entry.last_updated ? Date.parse(entry.last_updated) : 0;
+                if (t >= cutoff && (!mostRecent || t > Date.parse(mostRecent.last_updated))) mostRecent = entry;
+            });
+            return mostRecent;
+        }
+
+        // Called only by the SAVE ENTRY button — never by debouncedSave(), so it never nags on
+        // autosave. Pure awareness, not a data-loss guard: with entries name-keyed there's nothing
+        // left to overwrite between two different people's entries, so Cancel just aborts the save
+        // attempt without reloading or discarding anything typed (unlike saveCurrent()'s own,
+        // unrelated lastSeenUpdated conflict check above).
+        function saveEntryButtonClicked() {
+            const other = findRecentOtherLoggerEntry();
+            if (other) {
+                const who = formatLoggedBy(other) || 'Someone else';
+                const when = new Date(other.last_updated).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                const proceed = confirm(
+                    `${who} also logged something for this unit today, last updated ${when}.\n\n` +
+                    `Your entry saves separately under your own name — this is just a heads up in case ` +
+                    `you're duplicating what they already logged.\n\n` +
+                    `OK = save my entry.  Cancel = don't save yet.`
+                );
+                if (!proceed) return;
+            }
+            saveCurrent(true);
+        }
+
         // Show toast notification
         function showToast(message, isError = false) {
             const container = document.getElementById('toast-container');
@@ -2446,13 +2552,16 @@
             });
         }
         
-        // Load entry from history into form — key is the compound "dateStr|unit" key
+        // Load entry from history into form — key is the compound "dateStr|unit|name" key
         function loadHistoryEntry(key) {
-            const sep = key.indexOf('|');
-            const dateStr = sep === -1 ? key : key.slice(0, sep);
-            const unit = sep === -1 ? '' : key.slice(sep + 1);
+            const parts = key.split('|');
+            const dateStr = parts[0];
+            const unit = parts.length >= 2 ? parts[1] : '';
+            // slice(2).join('|') tolerates a free-text name that itself contains '|'
+            const name = parts.length >= 3 ? parts.slice(2).join('|') : UNASSIGNED_NAME;
             const unitSelect = document.getElementById('unit-select');
             if (unitSelect) unitSelect.value = (unit === UNASSIGNED_UNIT) ? '' : unit;
+            currentEntryNameOverride = name; // preserve original ownership — edits save back into THIS person's record
             loadDate(dateStr);
             switchView('tally');
             
@@ -2964,6 +3073,7 @@
                         // an older export could be bare-date-keyed and/or predate the reason log, and
                         // its tallies shouldn't be trusted over whatever reasons are actually recorded.
                         rekeyLegacyDateOnlyEntries(imported);
+                        rekeyLegacyUnitOnlyEntries(imported);
                         backfillReasonLogs(imported);
                         let mergedCount = 0;
 
@@ -3105,6 +3215,7 @@
         function goToToday() {
             const today = getTodayStr();
             if (currentDateStr !== today) {
+                currentEntryNameOverride = null; // navigating to a new date — reset to MY OWN entry
                 loadDate(today);
             }
             // If already on today but want to clear form? No, just ensure it's loaded
@@ -3231,6 +3342,7 @@
             
             loadData();
             rekeyLegacyDateOnlyEntries(currentData);
+            rekeyLegacyUnitOnlyEntries(currentData);
             backfillReasonLogs(currentData);
             saveDataLocal(); // persist the migrated shape immediately rather than leaving it in-memory only
             loadCustomReasons();
