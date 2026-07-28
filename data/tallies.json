@@ -137,7 +137,7 @@
     "last_updated": "2026-07-28T02:50:03.037Z"
   },
   "2026-07-15": {
-    "unit": "Raiv-T1 / T-53",
+    "unit": "Raiv-T3 / T-51",
     "tallies": {
       "robotic": 2,
       "tieplate": 0,
@@ -167,6 +167,6 @@
       "name": "John",
       "profile": "demo"
     },
-    "last_updated": "2026-07-28T02:53:23.678Z"
+    "last_updated": "2026-07-28T02:53:29.447Z"
   }
 }
