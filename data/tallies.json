@@ -181,17 +181,19 @@
     "tallies": {
       "robotic": 0,
       "tieplate": 0,
-      "truck": 0
+      "truck": 1
     },
     "notes": {
       "robotic": "",
       "tieplate": "",
-      "truck": ""
+      "truck": "Rail Gear"
     },
     "reasons": {
       "robotic": [],
       "tieplate": [],
-      "truck": []
+      "truck": [
+        "Rail Gear"
+      ]
     },
     "comments": {
       "unique": "",
@@ -199,13 +201,13 @@
       "new": ""
     },
     "loggedBy": {
-      "name": "Coty C",
-      "profile": "demo"
+      "name": "Coty",
+      "profile": "fieldops"
     },
-    "last_updated": "2026-07-28T11:42:02.219Z"
+    "last_updated": "2026-07-28T13:09:37.995Z"
   },
   "_reasonRegistry": {
-    "_updated": "2026-07-28T13:06:46.882Z",
+    "_updated": "2026-07-28T13:09:37.386Z",
     "robotic": [
       {
         "id": "robotic-ms4nz7fv-u2x42o",
@@ -360,6 +362,12 @@
         "label": "Pneumatic issue",
         "value": "Pneumatic pressure issue",
         "icon": "fa-wind"
+      },
+      {
+        "id": "truck-ms4oafai-fyg5ty",
+        "label": "Rail Gear",
+        "value": "Rail Gear",
+        "icon": null
       }
     ]
   }
