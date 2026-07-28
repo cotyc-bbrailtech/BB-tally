@@ -108,34 +108,6 @@
     },
     "last_updated": "2026-07-27T17:25:37.013Z"
   },
-  "2026-07-28": {
-    "unit": "Raiv-T3 / T-51",
-    "tallies": {
-      "robotic": 0,
-      "tieplate": 0,
-      "truck": 0
-    },
-    "notes": {
-      "robotic": "",
-      "tieplate": "",
-      "truck": ""
-    },
-    "reasons": {
-      "robotic": [],
-      "tieplate": [],
-      "truck": []
-    },
-    "comments": {
-      "unique": "",
-      "unsafe": "",
-      "new": ""
-    },
-    "loggedBy": {
-      "name": "John",
-      "profile": "demo"
-    },
-    "last_updated": "2026-07-28T02:50:03.037Z"
-  },
   "2026-07-15": {
     "unit": "Raiv-T3 / T-51",
     "tallies": {
