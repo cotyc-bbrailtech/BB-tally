@@ -181,7 +181,7 @@
     "tallies": {
       "robotic": 0,
       "tieplate": 0,
-      "truck": 1
+      "truck": 0
     },
     "notes": {
       "robotic": "",
@@ -202,9 +202,9 @@
     },
     "loggedBy": {
       "name": "Coty",
-      "profile": "fieldops"
+      "profile": "developer"
     },
-    "last_updated": "2026-07-28T13:09:54.185Z"
+    "last_updated": "2026-07-28T13:10:47.949Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-07-28T13:09:37.386Z",
