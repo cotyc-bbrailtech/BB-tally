@@ -184,14 +184,12 @@
     "notes": {
       "robotic": "",
       "tieplate": "",
-      "truck": "Rail Gear"
+      "truck": ""
     },
     "reasons": {
       "robotic": [],
       "tieplate": [],
-      "truck": [
-        "Rail Gear"
-      ]
+      "truck": []
     },
     "comments": {
       "unique": "",
@@ -202,7 +200,7 @@
       "name": "Coty",
       "profile": "developer"
     },
-    "last_updated": "2026-07-28T13:47:26.175Z"
+    "last_updated": "2026-07-28T13:56:55.000Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-07-28T13:09:37.386Z",
