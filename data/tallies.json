@@ -36,7 +36,7 @@
       "name": "Coty",
       "profile": "fieldops"
     },
-    "last_updated": "2026-07-28T12:02:20.398Z"
+    "last_updated": "2026-07-28T13:00:53.421Z"
   },
   "2026-07-20": {
     "unit": "Raiv-T1 / T-53",
@@ -186,12 +186,14 @@
     "notes": {
       "robotic": "",
       "tieplate": "",
-      "truck": ""
+      "truck": "Rail Gear"
     },
     "reasons": {
       "robotic": [],
       "tieplate": [],
-      "truck": []
+      "truck": [
+        "Rail Gear"
+      ]
     },
     "comments": {
       "unique": "",
@@ -199,9 +201,174 @@
       "new": ""
     },
     "loggedBy": {
-      "name": "Coty C",
-      "profile": "demo"
+      "name": "Coty",
+      "profile": "developer"
     },
-    "last_updated": "2026-07-28T11:42:02.219Z"
+    "last_updated": "2026-07-28T13:10:54.189Z"
+  },
+  "_reasonRegistry": {
+    "_updated": "2026-07-28T13:09:37.386Z",
+    "robotic": [
+      {
+        "id": "robotic-ms4nz7fv-u2x42o",
+        "label": "Communication error",
+        "value": "Communication loss with PLC / controller",
+        "icon": "fa-network-wired"
+      },
+      {
+        "id": "robotic-ms4nz7fv-0d12kz",
+        "label": "Electrical / control fault",
+        "value": "Electrical or control system issue",
+        "icon": "fa-bolt"
+      },
+      {
+        "id": "robotic-ms4nz7fv-diz2nq",
+        "label": "False positive detection",
+        "value": "False positive detection (foreign object or debris)",
+        "icon": "fa-eye"
+      },
+      {
+        "id": "robotic-ms4nz7fv-6nc5k2",
+        "label": "Place / alignment error",
+        "value": "Robot arm place or alignment error",
+        "icon": "fa-crosshairs"
+      },
+      {
+        "id": "robotic-ms4nz7fv-lzjzau",
+        "label": "Safety interlock triggered",
+        "value": "Safety interlock or E-stop triggered",
+        "icon": "fa-shield-halved"
+      },
+      {
+        "id": "robotic-ms4nz7fv-qwv959",
+        "label": "Sensor dirty or obstructed",
+        "value": "Sensor / camera dirty, obstructed, or damaged",
+        "icon": "fa-camera"
+      },
+      {
+        "id": "robotic-ms4nz7fv-tu8j8v",
+        "label": "Software / logic fault",
+        "value": "Software or logic fault",
+        "icon": "fa-code"
+      },
+      {
+        "id": "robotic-ms4nz7fv-syisjo",
+        "label": "Gripper failed to hold part",
+        "value": "Gripper failed to hold part",
+        "icon": "fa-hand"
+      },
+      {
+        "id": "robotic-ms4nz7fv-yh058t",
+        "label": "Pick / alignment error",
+        "value": "Vision system pick or alignment error / detection failure",
+        "icon": "fa-robot"
+      }
+    ],
+    "tieplate": [
+      {
+        "id": "tieplate-ms4nz7fv-yro7js",
+        "label": "Bent or damaged plate",
+        "value": "Bent, damaged, or malformed tie plate",
+        "icon": "fa-wrench"
+      },
+      {
+        "id": "tieplate-ms4nz7fv-pi2ddi",
+        "label": "Electrical / control fault",
+        "value": "Electrical or control system issue",
+        "icon": "fa-bolt"
+      },
+      {
+        "id": "tieplate-ms4nz7fv-iwadk5",
+        "label": "Flipper malfunction",
+        "value": "Flipper mechanism malfunction",
+        "icon": "fa-rotate"
+      },
+      {
+        "id": "tieplate-ms4nz7fv-r48pff",
+        "label": "Mechanical misalignment",
+        "value": "Mechanical misalignment or wear",
+        "icon": "fa-arrows-up-down-left-right"
+      },
+      {
+        "id": "tieplate-ms4nz7fv-wkpyt0",
+        "label": "Misfeed / improper seating",
+        "value": "Plate misfeed or improper seating in setter",
+        "icon": "fa-layer-group"
+      },
+      {
+        "id": "tieplate-ms4nz7fv-bnwzc0",
+        "label": "Pneumatic issue",
+        "value": "Pneumatic pressure issue",
+        "icon": "fa-wind"
+      },
+      {
+        "id": "tieplate-ms4nz7fv-d7rqrm",
+        "label": "Safety intervention required",
+        "value": "Safety intervention required",
+        "icon": "fa-shield-halved"
+      },
+      {
+        "id": "tieplate-ms4nz7fv-nm8r82",
+        "label": "Sensor failure",
+        "value": "Sensor failure on setter",
+        "icon": "fa-circle-exclamation"
+      },
+      {
+        "id": "tieplate-ms4nz7fv-vng5zv",
+        "label": "Vision Detector miscalibrated",
+        "value": "Vision Tie Detector miscalibrated",
+        "icon": "fa-eye"
+      }
+    ],
+    "truck": [
+      {
+        "id": "truck-ms4nz7fv-7u5bxc",
+        "label": "Conveyor adjustment",
+        "value": "Conveyor adjustment needed",
+        "icon": "fa-bars-staggered"
+      },
+      {
+        "id": "truck-ms4nz7fv-hq0ten",
+        "label": "Electrical / control fault",
+        "value": "Electrical or control system issue",
+        "icon": "fa-bolt"
+      },
+      {
+        "id": "truck-ms4nz7fv-r5l5r9",
+        "label": "Engine / power fault",
+        "value": "Engine, power, or drive system fault",
+        "icon": "fa-car-battery"
+      },
+      {
+        "id": "truck-ms4nz7fv-85d66z",
+        "label": "Hydraulic leak / low pressure",
+        "value": "Hydraulic leak or low system pressure",
+        "icon": "fa-droplet"
+      },
+      {
+        "id": "truck-ms4nz7fv-h5adz0",
+        "label": "Loader magnet malfunction",
+        "value": "Loader magnet malfunction",
+        "icon": "fa-magnet"
+      },
+      {
+        "id": "truck-ms4nz7fv-cu52fb",
+        "label": "Mobility problem",
+        "value": "Tire, track, or mobility problem",
+        "icon": "fa-truck"
+      },
+      {
+        "id": "truck-ms4nz7fv-b5uih0",
+        "label": "Pneumatic issue",
+        "value": "Pneumatic pressure issue",
+        "icon": "fa-wind"
+      },
+      {
+        "id": "truck-ms4oafai-fyg5ty",
+        "label": "Rail Gear",
+        "value": "Rail Gear",
+        "icon": null
+      }
+    ]
   }
 }
