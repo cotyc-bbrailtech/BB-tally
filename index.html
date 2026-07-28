@@ -1704,13 +1704,22 @@
         // Simple count adjuster (used by − and Reset buttons)
         function adjustTally(category, delta) {
             const countEl = document.getElementById(`${category}-count`);
-            let current = parseInt(countEl.textContent) || 0;
-            current = Math.max(0, current + delta);
-            countEl.textContent = current;
-            
+            const current = parseInt(countEl.textContent) || 0;
+            const next = Math.max(0, current + delta);
+            countEl.textContent = next;
+
+            // Keep the structured reasons log in sync with a manual decrement — otherwise a picked
+            // reason stays recorded (and keeps showing in Insights/Excel) forever, even after the
+            // +1 that logged it gets undone.
+            if (next < current && currentDateStr) {
+                ensureReasonsArray(category);
+                const arr = currentData[currentDateStr].reasons[category];
+                if (arr.length > 0) arr.pop();
+            }
+
             updateTotalCount();
             debouncedSave();
-            
+
             if (navigator.vibrate) {
                 navigator.vibrate(delta > 0 ? 15 : 10);
             }
@@ -1744,17 +1753,25 @@
         function resetTally(category) {
             const countEl = document.getElementById(`${category}-count`);
             countEl.textContent = '0';
+            if (currentDateStr) {
+                ensureReasonsArray(category);
+                currentData[currentDateStr].reasons[category] = [];
+            }
             updateTotalCount();
             debouncedSave();
         }
-        
+
         // Reset all tallies for current day
         function resetAllTallies() {
             if (!confirm('Reset all tallies for today to zero?')) return;
-            
+
             document.getElementById('robotic-count').textContent = '0';
             document.getElementById('tieplate-count').textContent = '0';
             document.getElementById('truck-count').textContent = '0';
+            if (currentDateStr) {
+                ['robotic', 'tieplate', 'truck'].forEach(cat => ensureReasonsArray(cat));
+                currentData[currentDateStr].reasons = { robotic: [], tieplate: [], truck: [] };
+            }
             updateTotalCount();
             debouncedSave();
         }
