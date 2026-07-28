@@ -1839,29 +1839,21 @@
   },
   "2026-07-04|Raiv-T1 / T-53|Coty C": {
     "unit": "Raiv-T1 / T-53",
+    "tallies": {
+      "robotic": 1,
+      "tieplate": 0,
+      "truck": 0
+    },
     "notes": {
       "robotic": "Vision system pick or alignment error / detection failure",
       "tieplate": "Bent, damaged, or malformed tie plate. Electrical or control system issue. Pneumatic pressure issue",
       "truck": ""
     },
-    "comments": {
-      "unique": "",
-      "unsafe": "",
-      "new": ""
-    },
-    "loggedBy": {
-      "name": "John",
-      "profile": "demo"
-    },
     "reasons": {
       "robotic": [
         "Vision system pick or alignment error / detection failure"
       ],
-      "tieplate": [
-        "Bent, damaged, or malformed tie plate",
-        "Electrical or control system issue",
-        "Pneumatic pressure issue"
-      ],
+      "tieplate": [],
       "truck": []
     },
     "reasonLog": {
@@ -1886,7 +1878,7 @@
             "name": "Coty",
             "profile": "fieldops"
           },
-          "deletedAt": null
+          "deletedAt": "2026-07-28T16:14:32.677Z"
         },
         {
           "id": "tieplate-ms4snsda-v4azv6",
@@ -1896,7 +1888,7 @@
             "name": "Coty C",
             "profile": "demo"
           },
-          "deletedAt": null
+          "deletedAt": "2026-07-28T16:14:32.677Z"
         },
         {
           "id": "tieplate-ms4uuxvq-mwwerz",
@@ -1906,16 +1898,20 @@
             "name": "John",
             "profile": "demo"
           },
-          "deletedAt": null
+          "deletedAt": "2026-07-28T16:14:32.677Z"
         }
       ],
       "truck": []
     },
-    "tallies": {
-      "robotic": 1,
-      "tieplate": 3,
-      "truck": 0
+    "comments": {
+      "unique": "",
+      "unsafe": "",
+      "new": ""
     },
-    "last_updated": "2026-07-28T16:13:35.439Z"
+    "loggedBy": {
+      "name": "John",
+      "profile": "fieldops"
+    },
+    "last_updated": "2026-07-28T16:14:34.481Z"
   }
 }
