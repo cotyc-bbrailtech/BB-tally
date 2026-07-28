@@ -164,7 +164,7 @@
     <div class="max-w-3xl mx-auto px-4 pb-20">
         
         <!-- Date & Status Bar -->
-        <div class="pt-5 pb-3 flex items-end justify-between no-print">
+        <div id="date-status-bar" class="pt-5 pb-3 flex items-end justify-between no-print">
             <div>
                 <div class="flex items-center gap-x-2">
                     <input type="date" id="current-date"
@@ -194,7 +194,7 @@
         </div>
 
         <!-- Unit in Operation -->
-        <div class="mb-4 no-print">
+        <div id="unit-in-operation" class="mb-4 no-print">
             <label class="text-[10px] font-bold text-slate-500 tracking-wider block mb-1.5 pl-0.5">UNIT IN OPERATION</label>
             <select id="unit-select" onchange="onUnitChange()"
                     class="w-full text-base font-semibold border border-slate-300 focus:border-orange-400 bg-white rounded-2xl px-4 py-3 text-slate-900 shadow-sm">
@@ -2212,6 +2212,12 @@
             document.getElementById('history-view').classList.add('hidden');
             document.getElementById('insights-view').classList.add('hidden');
             dashboardView.classList.add('hidden');
+
+            // The date picker and unit dropdown only drive the Tally entry form — History, Insights,
+            // and the Dashboard have their own filters (search box / range pills / category) and never
+            // read currentDateStr or unit-select, so show these controls only on the Tally tab.
+            document.getElementById('date-status-bar').classList.toggle('hidden', view !== 'tally');
+            document.getElementById('unit-in-operation').classList.toggle('hidden', view !== 'tally');
 
             // Deactivate all nav
             document.getElementById('nav-tally').classList.remove('active', 'text-slate-900');
