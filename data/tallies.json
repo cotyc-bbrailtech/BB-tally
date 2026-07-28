@@ -1301,15 +1301,19 @@
   },
   "2026-07-04|Raiv-T1 / T-53": {
     "unit": "Raiv-T1 / T-53",
-    "tallies": {
-      "robotic": 1,
-      "tieplate": 2,
-      "truck": 0
-    },
     "notes": {
       "robotic": "Vision system pick or alignment error / detection failure",
       "tieplate": "Bent, damaged, or malformed tie plate. Electrical or control system issue",
       "truck": ""
+    },
+    "comments": {
+      "unique": "",
+      "unsafe": "",
+      "new": ""
+    },
+    "loggedBy": {
+      "name": "Coty C",
+      "profile": "demo"
     },
     "reasons": {
       "robotic": [
@@ -1358,14 +1362,10 @@
       ],
       "truck": []
     },
-    "comments": {
-      "unique": "",
-      "unsafe": "",
-      "new": ""
-    },
-    "loggedBy": {
-      "name": "Coty C",
-      "profile": "demo"
+    "tallies": {
+      "robotic": 1,
+      "tieplate": 2,
+      "truck": 0
     },
     "last_updated": "2026-07-28T15:12:01.133Z"
   },
