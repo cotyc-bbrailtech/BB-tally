@@ -1628,15 +1628,19 @@
   },
   "2026-07-28|(unassigned unit)|Coty": {
     "unit": "",
-    "tallies": {
-      "robotic": 0,
-      "tieplate": 0,
-      "truck": 0
-    },
     "notes": {
       "robotic": "",
       "tieplate": "",
       "truck": ""
+    },
+    "comments": {
+      "unique": "",
+      "unsafe": "",
+      "new": ""
+    },
+    "loggedBy": {
+      "name": "Coty",
+      "profile": "fieldops"
     },
     "reasons": {
       "robotic": [],
@@ -1659,14 +1663,10 @@
         }
       ]
     },
-    "comments": {
-      "unique": "",
-      "unsafe": "",
-      "new": ""
-    },
-    "loggedBy": {
-      "name": "Coty",
-      "profile": "fieldops"
+    "tallies": {
+      "robotic": 0,
+      "tieplate": 0,
+      "truck": 0
     },
     "last_updated": "2026-07-28T16:16:13.284Z"
   },
@@ -1772,15 +1772,19 @@
   },
   "2026-07-04|Raiv-T1 / T-53|Coty": {
     "unit": "Raiv-T1 / T-53",
-    "tallies": {
-      "robotic": 1,
-      "tieplate": 2,
-      "truck": 0
-    },
     "notes": {
       "robotic": "Vision system pick or alignment error / detection failure",
       "tieplate": "Bent, damaged, or malformed tie plate. Electrical or control system issue",
       "truck": ""
+    },
+    "comments": {
+      "unique": "",
+      "unsafe": "",
+      "new": ""
+    },
+    "loggedBy": {
+      "name": "Coty",
+      "profile": "fieldops"
     },
     "reasons": {
       "robotic": [
@@ -1829,19 +1833,15 @@
       ],
       "truck": []
     },
-    "comments": {
-      "unique": "",
-      "unsafe": "",
-      "new": ""
-    },
-    "loggedBy": {
-      "name": "Coty",
-      "profile": "fieldops"
+    "tallies": {
+      "robotic": 1,
+      "tieplate": 2,
+      "truck": 0
     },
     "last_updated": "2026-07-28T16:11:48.301Z"
   },
   "_reasonRegistry": {
-    "_updated": "2026-07-28T13:09:37.386Z",
+    "_updated": "2026-07-28T16:16:46.306Z",
     "robotic": [
       {
         "id": "robotic-ms4nz7fv-u2x42o",
@@ -1996,12 +1996,6 @@
         "label": "Pneumatic issue",
         "value": "Pneumatic pressure issue",
         "icon": "fa-wind"
-      },
-      {
-        "id": "truck-ms4oafai-fyg5ty",
-        "label": "Rail Gear",
-        "value": "Rail Gear",
-        "icon": null
       }
     ]
   }
