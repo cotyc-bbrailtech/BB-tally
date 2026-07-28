@@ -34,35 +34,9 @@
     },
     "loggedBy": {
       "name": "Coty",
-      "profile": "demo"
+      "profile": "admin"
     },
-    "last_updated": "2026-07-27T20:39:01.562Z"
-  },
-  "2026-07-26": {
-    "unit": "Raiv-T2 / T-57",
-    "tallies": {
-      "robotic": 1,
-      "tieplate": 0,
-      "truck": 0
-    },
-    "notes": {
-      "robotic": "False positive on foreign object. Cleared manually.",
-      "tieplate": "",
-      "truck": ""
-    },
-    "reasons": {
-      "robotic": [
-        "False positive detection (foreign object or debris)"
-      ],
-      "tieplate": [],
-      "truck": []
-    },
-    "comments": {
-      "unique": "Likely isolated.",
-      "unsafe": "No safety issues.",
-      "new": ""
-    },
-    "last_updated": "2026-07-26T15:45:21.828Z"
+    "last_updated": "2026-07-27T20:55:08.317Z"
   },
   "2026-07-20": {
     "unit": "Raiv-T1 / T-53",
@@ -97,7 +71,11 @@
       "unsafe": "",
       "new": ""
     },
-    "last_updated": "2026-07-27T17:44:17.962Z"
+    "loggedBy": {
+      "name": "Coty",
+      "profile": "fieldops"
+    },
+    "last_updated": "2026-07-28T11:45:22.729Z"
   },
   "2026-07-19": {
     "unit": "Raiv-T1 / T-53",
@@ -171,6 +149,32 @@
       "profile": "demo"
     },
     "last_updated": "2026-07-28T02:53:34.904Z"
+  },
+  "2026-07-26": {
+    "unit": "Raiv-T2 / T-57",
+    "tallies": {
+      "robotic": 1,
+      "tieplate": 0,
+      "truck": 0
+    },
+    "notes": {
+      "robotic": "False positive on foreign object. Cleared manually.",
+      "tieplate": "",
+      "truck": ""
+    },
+    "reasons": {
+      "robotic": [
+        "False positive detection (foreign object or debris)"
+      ],
+      "tieplate": [],
+      "truck": []
+    },
+    "comments": {
+      "unique": "Likely isolated.",
+      "unsafe": "No safety issues.",
+      "new": ""
+    },
+    "last_updated": "2026-07-26T15:45:21.828Z"
   },
   "2026-07-28": {
     "unit": "",
