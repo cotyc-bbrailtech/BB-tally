@@ -1839,22 +1839,27 @@
   },
   "2026-07-04|Raiv-T1 / T-53|Coty C": {
     "unit": "Raiv-T1 / T-53",
-    "tallies": {
-      "robotic": 1,
-      "tieplate": 1,
-      "truck": 0
-    },
     "notes": {
       "robotic": "Vision system pick or alignment error / detection failure",
       "tieplate": "Bent, damaged, or malformed tie plate. Electrical or control system issue. Pneumatic pressure issue. Flipper mechanism malfunction",
       "truck": ""
+    },
+    "comments": {
+      "unique": "",
+      "unsafe": "",
+      "new": ""
+    },
+    "loggedBy": {
+      "name": "John",
+      "profile": "fieldops"
     },
     "reasons": {
       "robotic": [
         "Vision system pick or alignment error / detection failure"
       ],
       "tieplate": [
-        "Flipper mechanism malfunction"
+        "Flipper mechanism malfunction",
+        "Bent, damaged, or malformed tie plate"
       ],
       "truck": []
     },
@@ -1911,19 +1916,25 @@
             "profile": "fieldops"
           },
           "deletedAt": null
+        },
+        {
+          "id": "tieplate-ms4uwh52-fs7wb2",
+          "text": "Bent, damaged, or malformed tie plate",
+          "addedAt": "2026-07-28T16:14:43.910Z",
+          "addedBy": {
+            "name": "John",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
         }
       ],
       "truck": []
     },
-    "comments": {
-      "unique": "",
-      "unsafe": "",
-      "new": ""
+    "tallies": {
+      "robotic": 1,
+      "tieplate": 2,
+      "truck": 0
     },
-    "loggedBy": {
-      "name": "John",
-      "profile": "fieldops"
-    },
-    "last_updated": "2026-07-28T16:14:42.964Z"
+    "last_updated": "2026-07-28T16:14:44.164Z"
   }
 }
