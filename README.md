@@ -50,19 +50,31 @@ Token stays only on that phone (not committed to the repo). Prefer a **private**
 
 ## Device profiles
 
-Every device is one of three profiles (a UI-level convenience, not real security — there's no backend to enforce anything against):
+Every device is one of four profiles (a UI-level convenience, not real security — there's no backend to enforce anything against):
 
-| Profile | Import / Clear / Export-JSON |
-|---------|-------------------------------|
-| **Admin** | Visible and functional |
-| **Field Ops** | Not shown at all — only Export to Excel and the Insights export remain |
-| **Demo** | Shown, but inert (a "not available" toast instead of running) |
+| Profile | Import / Clear / Export-JSON | Reason-list Dashboard |
+|---------|-------------------------------|------------------------|
+| **Admin** | Visible and functional | No |
+| **Field Ops** | Not shown at all — only Export to Excel and the Insights export remain | No |
+| **Demo** | Shown, but inert (a "not available" toast instead of running) | No |
+| **Developer** | Visible and functional (same as Admin) | Yes |
 
-Devices that haven't set a profile yet default to **Demo** — safe out of the box, nothing destructive can happen until someone deliberately sets a device to Admin or Field Ops.
+Devices that haven't set a profile yet default to **Demo** — safe out of the box, nothing destructive can happen until someone deliberately sets a device to Admin, Field Ops, or Developer.
 
-Switching a device **to** Admin requires a shared PIN, hardcoded as `ADMIN_PIN` near the top of `index.html`'s `<script>` block. Change it there before/after launch — it's a plain constant in the page source, so treat it as a deterrent against casual switching, not a real secret.
+Switching a device **to** Admin or **to** Developer requires its own shared PIN — `ADMIN_PIN` / `DEVELOPER_PIN`, both hardcoded near the top of `index.html`'s `<script>` block. Change them before/after launch — they're plain constants in the page source, so treat them as a deterrent against casual switching, not a real secret.
 
 Whoever's name + profile last saved a given day's entry shows up in the History tab, the printed report, and both exports ("Logged By").
+
+### Developer profile — reason-list dashboard
+
+A **DEV** tab appears in the bottom nav only for Developer devices. It manages the reason lists shown in each category's "+1" picker — the same PIN unlocks editing for that visit to the tab (re-locks the moment you switch to another tab, so it's not a standing unlock).
+
+- **Add** a reason: a short label (shown on the picker button) and a fuller description (auto-appended to that category's notes when picked, and what shows up in the printed report / Excel "Reasons Log").
+- **Edit** a reason: relabels it going forward, and — if the description text changed — retroactively relabels every past day that used the old text, so Insights/Top-Reasons/Excel counts stay consolidated under one name.
+- **Delete** a reason: only allowed if it has zero historical usage. If it's been used, merge it into another reason instead.
+- **Merge** reasons: pick two or more, choose which one survives, and every past entry using any of the others gets relabeled to the survivor.
+
+The reason lists sync across devices the same way tallies do (part of the same shared `data/tallies.json`, last-write-wins) — a Developer's edits show up for every connected crew, not just their own device.
 
 ## Local file
 

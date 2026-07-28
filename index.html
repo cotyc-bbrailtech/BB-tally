@@ -598,12 +598,20 @@
                 </div>
             </div>
         </div>
-        
+
+        <!-- DASHBOARD VIEW (Developer profile only) -->
+        <div id="dashboard-view" class="hidden">
+            <div class="mb-4 px-1">
+                <span class="section-header">DEVELOPER — REASON LISTS</span>
+            </div>
+            <div id="dashboard-content"><!-- PIN gate or editor, populated by renderDashboard() --></div>
+        </div>
+
     </div>
 
     <!-- Bottom Navigation -->
     <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 no-print">
-        <div class="max-w-3xl mx-auto grid grid-cols-3 text-center">
+        <div class="max-w-3xl mx-auto grid grid-cols-3 text-center" id="bottom-nav-grid">
             <button onclick="switchView('tally')" id="nav-tally"
                     class="nav-tab active flex flex-col items-center justify-center py-3 text-xs font-semibold text-slate-900">
                 <i class="fa-solid fa-clipboard-list text-xl mb-0.5"></i>
@@ -618,6 +626,11 @@
                     class="nav-tab flex flex-col items-center justify-center py-3 text-xs font-semibold text-slate-500 hover:text-slate-700">
                 <i class="fa-solid fa-chart-line text-xl mb-0.5"></i>
                 <span>INSIGHTS</span>
+            </button>
+            <button onclick="switchView('dashboard')" id="nav-dashboard"
+                    class="nav-tab hidden flex-col items-center justify-center py-3 text-xs font-semibold text-slate-500 hover:text-slate-700">
+                <i class="fa-solid fa-screwdriver-wrench text-xl mb-0.5"></i>
+                <span>DEV</span>
             </button>
         </div>
     </div>
@@ -687,15 +700,23 @@
         const CUSTOM_REASONS_KEY = 'bb_tally_custom_reasons_v1';
         const DELETED_DATES_KEY = 'bb_tally_deleted_v1';
         const PROFILE_KEY = 'bb_tally_profile_v1';
-        const PROFILE_LABELS = { admin: 'Admin', fieldops: 'Field Ops', demo: 'Demo' };
+        const PROFILE_LABELS = { admin: 'Admin', fieldops: 'Field Ops', demo: 'Demo', developer: 'Developer' };
         const ADMIN_PIN = '4471'; // Soft deterrent only — a plain constant in page source, not real security. Change it any time.
+        const DEVELOPER_PIN = '7735'; // Same deal as ADMIN_PIN — change to your own value, just keep it different from ADMIN_PIN.
+        const REASON_REGISTRY_KEY = 'bb_tally_reason_registry_v1';
+        const REASON_REGISTRY_FIELD = '_reasonRegistry'; // sibling key alongside date entries in the synced GitHub JSON — never a valid date, so the day-iteration loops skip it
         let currentData = {};
         let currentDateStr = '';
         let chartInstance = null;
         let saveTimeout = null;
         let customReasons = { robotic: [], tieplate: [], truck: [] };
         let deletedDates = {}; // { 'YYYY-MM-DD': isoTimestampOfDeletion } — tombstones so a cloud merge can't resurrect a deleted day
-        let userProfile = null; // { name, profile: 'admin'|'fieldops'|'demo' } | null — null means never configured, defaults to Demo
+        let userProfile = null; // { name, profile: 'admin'|'fieldops'|'demo'|'developer' } | null — null means never configured, defaults to Demo
+        let reasonRegistry = null; // { _updated, robotic:[{id,label,value,icon}], tieplate:[...], truck:[...] } — populated by loadReasonRegistry() at boot
+        let developerUnlocked = false; // in-memory only, never persisted — re-locks whenever you leave the Dashboard tab
+        let dashboardCategory = 'robotic';
+        let dashboardMergeMode = false;
+        let dashboardMergeSelection = new Set();
         let insightsRange = 7;          // 7 | 14 | 30 | 'all'
         let reasonFilter = 'all';        // 'all' | 'robotic' | 'tieplate' | 'truck'
 
@@ -733,6 +754,153 @@
                 { label: 'Pneumatic issue', value: 'Pneumatic pressure issue', icon: 'fa-wind' }
             ]
         };
+
+        // ---------- Reason Registry (Developer-editable reason lists) ----------
+        // DEFAULT_REASONS/customReasons above become historical-only inputs, feeding exactly one
+        // call site (migrateReasonRegistry) — the registry is the sole source of truth from here on.
+        function generateReasonId(category) {
+            return `${category}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        }
+
+        function migrateReasonRegistry() {
+            // _updated is deliberately epoch, not "now" — so a genuine remote registry (someone else
+            // already set one up) always outranks a device that's merely re-seeding for the first time.
+            const out = { _updated: new Date(0).toISOString(), robotic: [], tieplate: [], truck: [] };
+            ['robotic', 'tieplate', 'truck'].forEach(cat => {
+                (DEFAULT_REASONS[cat] || []).forEach(item => {
+                    out[cat].push({ id: generateReasonId(cat), label: item.label, value: item.value, icon: item.icon || null });
+                });
+                (customReasons[cat] || []).forEach(text => {
+                    const clean = (text || '').trim();
+                    if (clean) out[cat].push({ id: generateReasonId(cat), label: clean, value: clean, icon: null });
+                });
+            });
+            return out;
+        }
+
+        function saveReasonRegistry() {
+            try {
+                localStorage.setItem(REASON_REGISTRY_KEY, JSON.stringify(reasonRegistry));
+            } catch (e) {
+                console.warn('Could not persist reason registry', e);
+            }
+        }
+
+        function loadReasonRegistry() {
+            try {
+                const raw = localStorage.getItem(REASON_REGISTRY_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && Array.isArray(parsed.robotic) && Array.isArray(parsed.tieplate) && Array.isArray(parsed.truck)) {
+                        reasonRegistry = parsed;
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not parse reason registry, re-seeding', e);
+            }
+            reasonRegistry = migrateReasonRegistry();
+            saveReasonRegistry();
+        }
+
+        function getReasonList(category) {
+            return (reasonRegistry && Array.isArray(reasonRegistry[category])) ? reasonRegistry[category] : [];
+        }
+
+        function findReasonById(category, id) {
+            return getReasonList(category).find(r => r.id === id) || null;
+        }
+
+        function persistRegistryChange() {
+            reasonRegistry._updated = new Date().toISOString();
+            saveReasonRegistry();
+            saveData(); // saveDataLocal() + scheduleGithubPush() if connected — same path every other mutation uses
+        }
+
+        function countReasonUsage(category, value) {
+            let count = 0;
+            Object.keys(currentData).forEach(d => {
+                const arr = currentData[d]?.reasons?.[category];
+                if (Array.isArray(arr)) count += arr.filter(v => v === value).length;
+            });
+            return count;
+        }
+
+        // Rewrites every historical day's structured reasons[category] array from oldValue to newValue.
+        // Deliberately leaves notes[category] untouched — that's user-typed prose, not structured data.
+        function rewriteHistoricalReasonValue(category, oldValue, newValue) {
+            if (oldValue === newValue) return;
+            Object.keys(currentData).forEach(dateStr => {
+                const entry = currentData[dateStr];
+                const arr = entry && entry.reasons && entry.reasons[category];
+                if (!Array.isArray(arr)) return;
+                let changed = false;
+                for (let i = 0; i < arr.length; i++) {
+                    if (arr[i] === oldValue) { arr[i] = newValue; changed = true; }
+                }
+                if (changed) entry.last_updated = new Date().toISOString();
+            });
+            saveDataLocal();
+        }
+
+        function addReason(category, label, value) {
+            const cleanLabel = (label || '').trim();
+            const cleanValue = (value || '').trim();
+            if (!cleanLabel || !cleanValue) return null;
+            const lowerLabel = cleanLabel.toLowerCase(), lowerValue = cleanValue.toLowerCase();
+            const list = getReasonList(category);
+            if (list.some(r => r.value.toLowerCase() === lowerValue || r.label.toLowerCase() === lowerLabel)) return null;
+            const reason = { id: generateReasonId(category), label: cleanLabel, value: cleanValue, icon: null };
+            list.push(reason);
+            persistRegistryChange();
+            return reason;
+        }
+
+        function updateReason(category, id, newLabel, newValue) {
+            const reason = findReasonById(category, id);
+            if (!reason) return false;
+            const cleanLabel = (newLabel || '').trim(), cleanValue = (newValue || '').trim();
+            if (!cleanLabel || !cleanValue) return false;
+            const oldValue = reason.value;
+            reason.label = cleanLabel;
+            reason.value = cleanValue;
+            if (oldValue !== cleanValue) rewriteHistoricalReasonValue(category, oldValue, cleanValue);
+            persistRegistryChange();
+            return true;
+        }
+
+        function deleteReason(category, id) {
+            const reason = findReasonById(category, id);
+            if (!reason) return { ok: false, error: 'not-found' };
+            const usage = countReasonUsage(category, reason.value);
+            if (usage > 0) return { ok: false, error: 'in-use', usage };
+            reasonRegistry[category] = getReasonList(category).filter(r => r.id !== id);
+            persistRegistryChange();
+            return { ok: true };
+        }
+
+        function mergeReasons(category, sourceIds, survivorId) {
+            const survivor = findReasonById(category, survivorId);
+            if (!survivor) return { ok: false, error: 'survivor-not-found' };
+            const sources = sourceIds.filter(id => id !== survivorId).map(id => findReasonById(category, id)).filter(Boolean);
+            if (sources.length === 0) return { ok: false, error: 'no-sources' };
+            sources.forEach(src => rewriteHistoricalReasonValue(category, src.value, survivor.value));
+            const removeIds = new Set(sources.map(s => s.id));
+            reasonRegistry[category] = getReasonList(category).filter(r => !removeIds.has(r.id));
+            persistRegistryChange();
+            return { ok: true, mergedCount: sources.length };
+        }
+
+        function mergeReasonRegistryFromRemote(remoteRegistry) {
+            if (!remoteRegistry || typeof remoteRegistry !== 'object') return;
+            const rTime = remoteRegistry._updated ? Date.parse(remoteRegistry._updated) : 0;
+            const lTime = (reasonRegistry && reasonRegistry._updated) ? Date.parse(reasonRegistry._updated) : 0;
+            if (rTime >= lTime) {
+                reasonRegistry = remoteRegistry;
+                saveReasonRegistry();
+            }
+        }
+
         let persistenceAvailable = true; // localStorage usable?
         let cloudAvailable = false;      // GitHub storage configured + reachable
         let cloudStatus = 'checking';    // checking | online | offline
@@ -845,11 +1013,13 @@
                 const body = await res.json();
                 ghFileSha = body.sha;
                 const decoded = JSON.parse(atob(body.content.replace(/\n/g, '')));
+                mergeReasonRegistryFromRemote(decoded && decoded[REASON_REGISTRY_FIELD]);
                 // Merge remote with local
                 const local = currentData || {};
                 const merged = { ...local };
                 let tombstonesChanged = false;
                 Object.keys(decoded || {}).forEach(date => {
+                    if (date === REASON_REGISTRY_FIELD) return; // not a day entry — handled above
                     const r = decoded[date];
                     const l = local[date];
                     const rTime = r.last_updated ? Date.parse(r.last_updated) : 0;
@@ -964,7 +1134,8 @@
         async function pushFullStoreToGithub(data) {
             if (!ghConfig) return;
             try {
-                const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+                const wireData = reasonRegistry ? { ...data, [REASON_REGISTRY_FIELD]: reasonRegistry } : data;
+                const content = btoa(unescape(encodeURIComponent(JSON.stringify(wireData, null, 2))));
                 const payload = {
                     message: `Update tallies ${new Date().toISOString().slice(0, 16)}`,
                     content,
@@ -1044,12 +1215,13 @@
                             <option value="demo" ${existingProfile === 'demo' ? 'selected' : ''}>Demo (view + export only)</option>
                             <option value="fieldops" ${existingProfile === 'fieldops' ? 'selected' : ''}>Field Ops</option>
                             <option value="admin" ${existingProfile === 'admin' ? 'selected' : ''}>Admin</option>
+                            <option value="developer" ${existingProfile === 'developer' ? 'selected' : ''}>Developer</option>
                         </select>
-                        <p class="text-[10px] text-slate-400 mb-3">Field Ops hides Import/Clear/JSON-backup entirely. Demo shows them but disables them. Admin unlocks everything.</p>
+                        <p class="text-[10px] text-slate-400 mb-3">Field Ops hides Import/Clear/JSON-backup entirely. Demo shows them but disables them. Admin and Developer unlock everything, plus Developer gets the reason-list dashboard.</p>
 
                         <div id="profile-pin-row" class="hidden mb-3">
-                            <label class="text-[10px] font-bold text-slate-500 block mb-1">Admin PIN</label>
-                            <input id="profile-pin" type="password" inputmode="numeric" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm" placeholder="Enter PIN to unlock Admin">
+                            <label id="profile-pin-label" class="text-[10px] font-bold text-slate-500 block mb-1">PIN</label>
+                            <input id="profile-pin" type="password" inputmode="numeric" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm" placeholder="Enter PIN">
                         </div>
 
                         <div class="h-px bg-slate-100 my-3"></div>
@@ -1079,7 +1251,13 @@
             const sel = document.getElementById('profile-select');
             const row = document.getElementById('profile-pin-row');
             if (!sel || !row) return;
-            row.classList.toggle('hidden', !requiresPinToEscalate(sel.value));
+            const needsPin = requiresPinToEscalate(sel.value);
+            row.classList.toggle('hidden', !needsPin);
+            if (needsPin) {
+                const label = PROFILE_LABELS[sel.value] || sel.value;
+                document.getElementById('profile-pin-label').textContent = `${label} PIN`;
+                document.getElementById('profile-pin').placeholder = `Enter PIN to unlock ${label}`;
+            }
         }
 
         async function saveGhSettingsFromForm() {
@@ -1087,10 +1265,11 @@
             const nameVal = document.getElementById('profile-name').value.trim();
             const selectedProfile = document.getElementById('profile-select').value;
 
-            if (requiresPinToEscalate(selectedProfile)) {
+            const requiredPin = pinRequiredForEscalation(selectedProfile);
+            if (requiredPin !== null) {
                 const pinVal = (document.getElementById('profile-pin')?.value || '').trim();
-                if (pinVal !== ADMIN_PIN) {
-                    showToast('Incorrect Admin PIN', true);
+                if (pinVal !== requiredPin) {
+                    showToast(`Incorrect ${PROFILE_LABELS[selectedProfile] || selectedProfile} PIN`, true);
                     return;
                 }
             }
@@ -1152,18 +1331,24 @@
         function getProfile() { return (userProfile && userProfile.profile) || 'demo'; }
         function getProfileName() { return (userProfile && userProfile.name) || ''; }
         function isAdmin() { return getProfile() === 'admin'; }
+        function isDeveloper() { return getProfile() === 'developer'; }
 
-        // Visibility: Field Ops hides the data-tools row entirely; Admin and Demo both show it
+        // Visibility: Field Ops hides the data-tools row entirely; Admin, Demo, and Developer all show it
         // (Demo shows it but the underlying functions no-op — see canUseDataTools()).
         function shouldShowDataTools() { return getProfile() !== 'fieldops'; }
 
-        // Functional gate: only Admin can actually execute Import / Clear / Export-JSON.
-        function canUseDataTools() { return isAdmin(); }
+        // Functional gate: only Admin and Developer can actually execute Import / Clear / Export-JSON.
+        function canUseDataTools() { return isAdmin() || isDeveloper(); }
 
-        // PIN is only relevant when actually escalating TO admin from a non-admin current state —
-        // re-saving while already admin, or de-escalating away from admin, never prompts for it.
+        // PIN is only relevant when actually escalating TO a PIN-protected profile from a different
+        // current state — re-saving while already on that profile, or de-escalating away, never prompts.
+        function pinRequiredForEscalation(newProfileValue) {
+            if (newProfileValue === 'admin' && getProfile() !== 'admin') return ADMIN_PIN;
+            if (newProfileValue === 'developer' && getProfile() !== 'developer') return DEVELOPER_PIN;
+            return null;
+        }
         function requiresPinToEscalate(newProfileValue) {
-            return newProfileValue === 'admin' && getProfile() !== 'admin';
+            return pinRequiredForEscalation(newProfileValue) !== null;
         }
 
         function escapeHtml(str) {
@@ -1193,6 +1378,23 @@
                 badge.textContent = label;
                 badge.title = label;
             }
+
+            const devVisible = isDeveloper();
+            const devNavBtn = document.getElementById('nav-dashboard');
+            if (devNavBtn) {
+                devNavBtn.classList.toggle('hidden', !devVisible);
+                devNavBtn.classList.toggle('flex', devVisible); // toggle together — Tailwind's .hidden/.flex both set `display`, so both must move in lockstep
+            }
+            const navGrid = document.getElementById('bottom-nav-grid');
+            if (navGrid) {
+                navGrid.classList.toggle('grid-cols-3', !devVisible);
+                navGrid.classList.toggle('grid-cols-4', devVisible);
+            }
+            if (!devVisible) {
+                developerUnlocked = false;
+                const dashboardView = document.getElementById('dashboard-view');
+                if (dashboardView && !dashboardView.classList.contains('hidden')) switchView('tally');
+            }
         }
 
         // ---------- Custom Reasons Persistence ----------
@@ -1212,14 +1414,6 @@
             }
         }
 
-        function saveCustomReasons() {
-            try {
-                localStorage.setItem(CUSTOM_REASONS_KEY, JSON.stringify(customReasons));
-            } catch (e) {
-                console.warn('Could not persist custom reasons', e);
-            }
-        }
-
         // ---------- Deletion Tombstones (so a cloud merge can't resurrect a day deleted on this device) ----------
         function loadDeletedDates() {
             try {
@@ -1236,24 +1430,6 @@
             } catch (e) {
                 console.warn('Could not persist deletion tombstones', e);
             }
-        }
-
-        function addCustomReason(category, text) {
-            const clean = (text || '').trim();
-            if (!clean || clean.length < 3) return false;
-
-            // Avoid duplicates (case-insensitive)
-            const existing = customReasons[category] || [];
-            const lower = clean.toLowerCase();
-            if (existing.some(r => r.toLowerCase() === lower)) return false;
-
-            // Also skip if it matches a default
-            const defaults = DEFAULT_REASONS[category] || [];
-            if (defaults.some(d => d.value.toLowerCase() === lower || d.label.toLowerCase() === lower)) return false;
-
-            customReasons[category] = [...existing, clean];
-            saveCustomReasons();
-            return true;
         }
 
         // Kept for compatibility – modal rebuilds its list on every open
@@ -1382,39 +1558,41 @@
             };
             const colors = catColors[category] || { bg: 'bg-slate-100', icon: 'text-slate-500' };
             
-            (DEFAULT_REASONS[category] || []).forEach(item => {
+            const registryReasons = getReasonList(category);
+            const withIcon = registryReasons.filter(item => item.icon);
+            const withoutIcon = registryReasons.filter(item => !item.icon);
+
+            withIcon.forEach(item => {
                 const btn = document.createElement('button');
                 btn.className = 'w-full text-left px-4 py-3.5 bg-white border border-slate-200 rounded-2xl active:bg-slate-50 active:scale-[0.98] transition-all flex items-center gap-3';
-                const iconClass = item.icon || 'fa-circle';
                 btn.innerHTML = `
                     <div class="w-8 h-8 rounded-full ${colors.bg} flex items-center justify-center flex-shrink-0">
-                        <i class="fa-solid ${iconClass} ${colors.icon} text-sm"></i>
+                        <i class="fa-solid ${item.icon} ${colors.icon} text-sm"></i>
                     </div>
-                    <span class="text-sm font-medium text-slate-800 leading-snug">${item.label}</span>
+                    <span class="text-sm font-medium text-slate-800 leading-snug">${escapeHtml(item.label)}</span>
                 `;
                 btn.onclick = () => selectReason(item.value);
                 listEl.appendChild(btn);
             });
-            
-            // Custom reasons (if any)
-            const customs = customReasons[category] || [];
-            if (customs.length > 0) {
+
+            // Custom / Developer-added reasons (no icon assigned) shown separately, matching the old look
+            if (withoutIcon.length > 0) {
                 const header = document.createElement('div');
                 header.className = 'text-[10px] font-bold text-slate-400 tracking-wider pt-3 pb-1 px-1';
                 header.textContent = 'YOUR CUSTOM REASONS';
                 listEl.appendChild(header);
-                
-                customs.forEach(txt => {
+
+                withoutIcon.forEach(item => {
                     const btn = document.createElement('button');
                     btn.className = 'w-full text-left px-4 py-3.5 bg-orange-50 border border-orange-200 rounded-2xl active:bg-orange-100 active:scale-[0.98] transition-all flex items-center gap-3';
-                    const short = txt.length > 60 ? txt.slice(0, 57) + '…' : txt;
+                    const short = item.label.length > 60 ? item.label.slice(0, 57) + '…' : item.label;
                     btn.innerHTML = `
                         <div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
                             <i class="fa-solid fa-star text-orange-500 text-sm"></i>
                         </div>
-                        <span class="text-sm font-medium text-slate-800 leading-snug">${short}</span>
+                        <span class="text-sm font-medium text-slate-800 leading-snug">${escapeHtml(short)}</span>
                     `;
-                    btn.onclick = () => selectReason(txt);
+                    btn.onclick = () => selectReason(item.value);
                     listEl.appendChild(btn);
                 });
             }
@@ -1484,12 +1662,12 @@
             
             const category = currentPickerCategory;
             if (!category) return;
-            
-            // Save as persistent custom if new
-            if (addCustomReason(category, text)) {
+
+            // Save as a persistent reason if new
+            if (addReason(category, text, text)) {
                 showToast('Custom reason saved');
             }
-            
+
             selectReason(text);
         }
 
@@ -1656,11 +1834,21 @@
         
         // Switch between main views
         function switchView(view) {
+            if (view === 'dashboard' && !isDeveloper()) view = 'tally'; // guard against a stale/direct call
+
+            // Re-lock the Dashboard the instant you navigate away from it — "session" means
+            // continuous time spent on that tab, not the page-load lifetime.
+            const dashboardView = document.getElementById('dashboard-view');
+            if (view !== 'dashboard' && dashboardView && !dashboardView.classList.contains('hidden')) {
+                developerUnlocked = false;
+            }
+
             // Hide all
             document.getElementById('tally-view').classList.add('hidden');
             document.getElementById('history-view').classList.add('hidden');
             document.getElementById('insights-view').classList.add('hidden');
-            
+            dashboardView.classList.add('hidden');
+
             // Deactivate all nav
             document.getElementById('nav-tally').classList.remove('active', 'text-slate-900');
             document.getElementById('nav-tally').classList.add('text-slate-500');
@@ -1668,7 +1856,9 @@
             document.getElementById('nav-history').classList.add('text-slate-500');
             document.getElementById('nav-insights').classList.remove('active', 'text-slate-900');
             document.getElementById('nav-insights').classList.add('text-slate-500');
-            
+            document.getElementById('nav-dashboard').classList.remove('active', 'text-slate-900');
+            document.getElementById('nav-dashboard').classList.add('text-slate-500');
+
             if (view === 'tally') {
                 document.getElementById('tally-view').classList.remove('hidden');
                 document.getElementById('nav-tally').classList.add('active', 'text-slate-900');
@@ -1685,9 +1875,236 @@
                 document.getElementById('nav-insights').classList.remove('text-slate-500');
                 renderInsights();
                 refreshFromCloud();
+            } else if (view === 'dashboard') {
+                dashboardView.classList.remove('hidden');
+                document.getElementById('nav-dashboard').classList.add('active', 'text-slate-900');
+                document.getElementById('nav-dashboard').classList.remove('text-slate-500');
+                renderDashboard();
             }
         }
-        
+
+        // ---------- Developer Dashboard (reason-list management) ----------
+        const DASHBOARD_CATEGORY_LABELS = { robotic: 'Robotic System', tieplate: 'Tie Plate Setter', truck: 'Truck Malfunction' };
+
+        function renderDashboard() {
+            const el = document.getElementById('dashboard-content');
+            el.innerHTML = developerUnlocked ? dashboardEditorHtml() : dashboardPinGateHtml();
+        }
+
+        function dashboardPinGateHtml() {
+            return `
+                <div class="bg-white border border-slate-200 rounded-3xl p-6 text-center">
+                    <i class="fa-solid fa-lock text-3xl text-slate-300 mb-3"></i>
+                    <p class="text-sm text-slate-600 mb-4">Enter the Developer PIN to edit reason lists for this session.</p>
+                    <input id="dashboard-pin-input" type="password" inputmode="numeric" placeholder="PIN"
+                           class="w-full max-w-[160px] mx-auto border border-slate-300 rounded-2xl px-3 py-2.5 text-sm text-center mb-3"
+                           onkeydown="if(event.key==='Enter'){ unlockDashboard(); }">
+                    <button onclick="unlockDashboard()" class="px-5 py-2.5 bg-slate-900 text-white font-semibold rounded-2xl text-sm">Unlock Editing</button>
+                </div>
+            `;
+        }
+
+        function unlockDashboard() {
+            const val = (document.getElementById('dashboard-pin-input')?.value || '').trim();
+            if (val !== DEVELOPER_PIN) {
+                showToast('Incorrect Developer PIN', true);
+                return;
+            }
+            developerUnlocked = true;
+            dashboardMergeMode = false;
+            dashboardMergeSelection.clear();
+            renderDashboard();
+        }
+
+        function dashboardEditorHtml() {
+            const tabs = ['robotic', 'tieplate', 'truck'].map(cat => `
+                <button onclick="setDashboardCategory('${cat}')"
+                        class="flex-1 py-2 text-xs font-semibold rounded-2xl ${dashboardCategory === cat ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-600'}">
+                    ${DASHBOARD_CATEGORY_LABELS[cat]}
+                </button>
+            `).join('');
+
+            const list = getReasonList(dashboardCategory);
+            const rows = list.map(r => dashboardReasonRowHtml(r)).join('') || `<div class="text-sm text-slate-400 text-center py-6">No reasons yet.</div>`;
+
+            const mergeBar = dashboardMergeMode ? `
+                <div class="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-2xl px-4 py-2.5 mb-3">
+                    <span class="text-xs font-medium text-amber-800">${dashboardMergeSelection.size} selected</span>
+                    <div class="flex gap-2">
+                        <button onclick="confirmMergeSelected()" class="text-xs font-semibold px-3 py-1.5 bg-amber-600 text-white rounded-2xl" ${dashboardMergeSelection.size < 2 ? 'disabled' : ''}>Merge Selected</button>
+                        <button onclick="toggleMergeMode()" class="text-xs font-semibold px-3 py-1.5 bg-white border border-slate-300 text-slate-600 rounded-2xl">Cancel</button>
+                    </div>
+                </div>
+            ` : '';
+
+            return `
+                <div class="flex gap-2 mb-4">${tabs}</div>
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-bold text-slate-400 tracking-wider">${list.length} REASON${list.length === 1 ? '' : 'S'}</span>
+                    ${!dashboardMergeMode ? `<button onclick="toggleMergeMode()" class="text-xs font-semibold text-slate-500 hover:text-slate-700"><i class="fa-solid fa-code-merge mr-1"></i>Merge…</button>` : ''}
+                </div>
+                ${mergeBar}
+                <div class="space-y-2 mb-5">${rows}</div>
+                <div class="bg-white border border-slate-200 rounded-3xl p-4">
+                    <div class="text-xs font-bold text-slate-500 mb-2">ADD REASON</div>
+                    <input id="dashboard-new-label" placeholder="Short label (shown on button)" class="w-full border border-slate-300 rounded-2xl px-3 py-2 text-sm mb-2">
+                    <textarea id="dashboard-new-value" placeholder="Full description (used as the auto-note / in reports)" rows="2" class="w-full border border-slate-300 rounded-2xl px-3 py-2 text-sm mb-2"></textarea>
+                    <button onclick="handleAddReason()" class="w-full py-2.5 bg-slate-900 text-white font-semibold rounded-2xl text-sm">Add Reason</button>
+                </div>
+            `;
+        }
+
+        function dashboardReasonRowHtml(r) {
+            const usage = countReasonUsage(dashboardCategory, r.value);
+            const checked = dashboardMergeSelection.has(r.id);
+            if (dashboardMergeMode) {
+                return `
+                    <label class="flex items-start gap-3 bg-white border ${checked ? 'border-amber-400' : 'border-slate-200'} rounded-2xl px-4 py-3 cursor-pointer">
+                        <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleMergeSelect('${r.id}')" class="mt-1">
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-semibold text-slate-900">${escapeHtml(r.label)}</div>
+                            <div class="text-xs text-slate-500 truncate">${escapeHtml(r.value)}</div>
+                        </div>
+                    </label>
+                `;
+            }
+            return `
+                <div class="bg-white border border-slate-200 rounded-2xl px-4 py-3">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-semibold text-slate-900">${escapeHtml(r.label)}</div>
+                            <div class="text-xs text-slate-500">${escapeHtml(r.value)}</div>
+                            <div class="text-[10px] text-slate-400 mt-1">Used ${usage} time${usage === 1 ? '' : 's'}</div>
+                        </div>
+                        <div class="flex gap-1 flex-shrink-0">
+                            <button onclick="openEditReasonForm('${r.id}')" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 rounded-xl"><i class="fa-solid fa-pen text-xs"></i></button>
+                            <button onclick="handleDeleteReason('${r.id}')" class="w-8 h-8 flex items-center justify-center text-red-400 hover:text-red-600 rounded-xl"><i class="fa-solid fa-trash text-xs"></i></button>
+                        </div>
+                    </div>
+                    <div id="edit-row-${r.id}"></div>
+                </div>
+            `;
+        }
+
+        function setDashboardCategory(cat) {
+            dashboardCategory = cat;
+            dashboardMergeMode = false;
+            dashboardMergeSelection.clear();
+            renderDashboard();
+        }
+
+        function toggleMergeMode() {
+            dashboardMergeMode = !dashboardMergeMode;
+            dashboardMergeSelection.clear();
+            renderDashboard();
+        }
+
+        function toggleMergeSelect(id) {
+            if (dashboardMergeSelection.has(id)) dashboardMergeSelection.delete(id);
+            else dashboardMergeSelection.add(id);
+            renderDashboard();
+        }
+
+        function confirmMergeSelected() {
+            if (dashboardMergeSelection.size < 2) return;
+            const ids = [...dashboardMergeSelection];
+            const list = getReasonList(dashboardCategory).filter(r => ids.includes(r.id));
+            const rows = list.map((r, i) => `
+                <label class="flex items-start gap-3 px-3 py-2.5 rounded-2xl border border-slate-200 mb-2 cursor-pointer">
+                    <input type="radio" name="merge-survivor" value="${r.id}" ${i === 0 ? 'checked' : ''} class="mt-1">
+                    <div>
+                        <div class="text-sm font-semibold text-slate-900">${escapeHtml(r.label)}</div>
+                        <div class="text-xs text-slate-500">${escapeHtml(r.value)}</div>
+                    </div>
+                </label>
+            `).join('');
+            const html = `
+                <div class="fixed inset-0 bg-black/50 z-[200] flex items-end sm:items-center justify-center" id="merge-confirm-modal">
+                    <div class="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto" onclick="event.stopImmediatePropagation()">
+                        <div class="text-lg font-bold text-slate-900 mb-1">Merge ${list.length} reasons</div>
+                        <p class="text-xs text-slate-500 mb-4">Pick which one survives. Every past entry using the others gets relabeled to match it.</p>
+                        ${rows}
+                        <div class="flex gap-2 mt-3">
+                            <button onclick="finishMerge()" class="flex-1 py-3 bg-amber-600 text-white font-semibold rounded-2xl text-sm">Confirm Merge</button>
+                            <button onclick="document.getElementById('merge-confirm-modal').remove()" class="px-4 py-3 border border-slate-300 rounded-2xl text-sm text-slate-600">Cancel</button>
+                        </div>
+                    </div>
+                </div>`;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        function finishMerge() {
+            const selected = document.querySelector('input[name="merge-survivor"]:checked');
+            if (!selected) return;
+            const survivorId = selected.value;
+            const ids = [...dashboardMergeSelection];
+            const result = mergeReasons(dashboardCategory, ids, survivorId);
+            document.getElementById('merge-confirm-modal')?.remove();
+            if (result.ok) {
+                showToast(`Merged ${result.mergedCount} reason(s)`);
+                dashboardMergeMode = false;
+                dashboardMergeSelection.clear();
+                renderDashboard();
+            } else {
+                showToast('Merge failed', true);
+            }
+        }
+
+        function openEditReasonForm(id) {
+            const reason = findReasonById(dashboardCategory, id);
+            if (!reason) return;
+            const el = document.getElementById(`edit-row-${id}`);
+            if (!el) return;
+            el.innerHTML = `
+                <div class="mt-3 pt-3 border-t border-slate-100">
+                    <input id="edit-label-${id}" value="${escapeHtml(reason.label)}" class="w-full border border-slate-300 rounded-2xl px-3 py-2 text-sm mb-2" placeholder="Short label">
+                    <textarea id="edit-value-${id}" rows="2" class="w-full border border-slate-300 rounded-2xl px-3 py-2 text-sm mb-2" placeholder="Full description">${escapeHtml(reason.value)}</textarea>
+                    <div class="flex gap-2">
+                        <button onclick="saveEditedReason('${id}')" class="flex-1 py-2 bg-slate-900 text-white font-semibold rounded-2xl text-xs">Save</button>
+                        <button onclick="renderDashboard()" class="px-3 py-2 border border-slate-300 rounded-2xl text-xs text-slate-600">Cancel</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function saveEditedReason(id) {
+            const label = document.getElementById(`edit-label-${id}`)?.value || '';
+            const value = document.getElementById(`edit-value-${id}`)?.value || '';
+            if (updateReason(dashboardCategory, id, label, value)) {
+                showToast('Reason updated');
+                renderDashboard();
+            } else {
+                showToast('Could not update reason', true);
+            }
+        }
+
+        function handleDeleteReason(id) {
+            const reason = findReasonById(dashboardCategory, id);
+            if (!reason) return;
+            if (!confirm(`Delete "${reason.label}"? This can't be undone.`)) return;
+            const result = deleteReason(dashboardCategory, id);
+            if (result.ok) {
+                showToast('Reason deleted');
+                renderDashboard();
+            } else if (result.error === 'in-use') {
+                showToast(`Can't delete — used ${result.usage} time(s) in history. Merge it into another reason instead.`, true);
+            } else {
+                showToast('Could not delete reason', true);
+            }
+        }
+
+        function handleAddReason() {
+            const label = document.getElementById('dashboard-new-label')?.value || '';
+            const value = document.getElementById('dashboard-new-value')?.value || '';
+            const reason = addReason(dashboardCategory, label, value);
+            if (reason) {
+                showToast('Reason added');
+                renderDashboard();
+            } else {
+                showToast('Enter a label and description (must not duplicate an existing reason)', true);
+            }
+        }
+
         // Render history list
         function renderHistory(filteredData = null) {
             const container = document.getElementById('history-list');
@@ -2542,6 +2959,7 @@
             
             loadData();
             loadCustomReasons();
+            loadReasonRegistry();
             loadDeletedDates();
             loadProfile();
             applyProfilePermissions();
