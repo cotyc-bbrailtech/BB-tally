@@ -930,19 +930,21 @@
     "unit": "Raiv-T1 / T-53",
     "tallies": {
       "robotic": 1,
-      "tieplate": 0,
+      "tieplate": 1,
       "truck": 0
     },
     "notes": {
       "robotic": "Vision system pick or alignment error / detection failure",
-      "tieplate": "",
+      "tieplate": "Bent, damaged, or malformed tie plate",
       "truck": ""
     },
     "reasons": {
       "robotic": [
         "Vision system pick or alignment error / detection failure"
       ],
-      "tieplate": [],
+      "tieplate": [
+        "Bent, damaged, or malformed tie plate"
+      ],
       "truck": []
     },
     "reasonLog": {
@@ -958,7 +960,18 @@
           "deletedAt": null
         }
       ],
-      "tieplate": [],
+      "tieplate": [
+        {
+          "id": "tieplate-ms4sjxtq-ysxhe8",
+          "text": "Bent, damaged, or malformed tie plate",
+          "addedAt": "2026-07-28T15:08:59.774Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        }
+      ],
       "truck": []
     },
     "comments": {
@@ -970,7 +983,7 @@
       "name": "Coty",
       "profile": "fieldops"
     },
-    "last_updated": "2026-07-28T15:08:55.678Z"
+    "last_updated": "2026-07-28T15:09:01.586Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-07-28T13:09:37.386Z",
