@@ -139,18 +139,19 @@
   "2026-07-15": {
     "unit": "",
     "tallies": {
-      "robotic": 1,
+      "robotic": 2,
       "tieplate": 0,
       "truck": 0
     },
     "notes": {
-      "robotic": "Gripper failed to hold part",
+      "robotic": "Gripper failed to hold part. Vision system pick or alignment error / detection failure",
       "tieplate": "",
       "truck": ""
     },
     "reasons": {
       "robotic": [
-        "Gripper failed to hold part"
+        "Gripper failed to hold part",
+        "Vision system pick or alignment error / detection failure"
       ],
       "tieplate": [],
       "truck": []
@@ -164,6 +165,6 @@
       "name": "John",
       "profile": "demo"
     },
-    "last_updated": "2026-07-28T02:50:29.594Z"
+    "last_updated": "2026-07-28T02:50:41.430Z"
   }
 }
