@@ -103,12 +103,12 @@
     "unit": "Raiv-T1 / T-53",
     "tallies": {
       "robotic": 0,
-      "tieplate": 10,
+      "tieplate": 11,
       "truck": 0
     },
     "notes": {
       "robotic": "",
-      "tieplate": "Bent, damaged, or malformed tie plate",
+      "tieplate": "Bent, damaged, or malformed tie plate. Flipper mechanism malfunction",
       "truck": ""
     },
     "reasons": {
@@ -123,7 +123,8 @@
         "Bent, damaged, or malformed tie plate",
         "Bent, damaged, or malformed tie plate",
         "Bent, damaged, or malformed tie plate",
-        "Bent, damaged, or malformed tie plate"
+        "Bent, damaged, or malformed tie plate",
+        "Flipper mechanism malfunction"
       ],
       "truck": []
     },
@@ -132,7 +133,11 @@
       "unsafe": "",
       "new": ""
     },
-    "last_updated": "2026-07-27T17:25:37.013Z"
+    "loggedBy": {
+      "name": "Coty C",
+      "profile": "demo"
+    },
+    "last_updated": "2026-07-28T11:43:41.769Z"
   },
   "2026-07-15": {
     "unit": "Raiv-T3 / T-51",
