@@ -34,9 +34,9 @@
     },
     "loggedBy": {
       "name": "Coty",
-      "profile": "demo"
+      "profile": "fieldops"
     },
-    "last_updated": "2026-07-27T20:39:01.562Z"
+    "last_updated": "2026-07-28T12:02:20.398Z"
   },
   "2026-07-20": {
     "unit": "Raiv-T1 / T-53",
@@ -71,18 +71,22 @@
       "unsafe": "",
       "new": ""
     },
-    "last_updated": "2026-07-27T17:44:17.962Z"
+    "loggedBy": {
+      "name": "Coty",
+      "profile": "fieldops"
+    },
+    "last_updated": "2026-07-28T11:45:22.729Z"
   },
   "2026-07-19": {
     "unit": "Raiv-T1 / T-53",
     "tallies": {
       "robotic": 0,
-      "tieplate": 10,
+      "tieplate": 11,
       "truck": 0
     },
     "notes": {
       "robotic": "",
-      "tieplate": "Bent, damaged, or malformed tie plate",
+      "tieplate": "Bent, damaged, or malformed tie plate. Flipper mechanism malfunction",
       "truck": ""
     },
     "reasons": {
@@ -97,7 +101,8 @@
         "Bent, damaged, or malformed tie plate",
         "Bent, damaged, or malformed tie plate",
         "Bent, damaged, or malformed tie plate",
-        "Bent, damaged, or malformed tie plate"
+        "Bent, damaged, or malformed tie plate",
+        "Flipper mechanism malfunction"
       ],
       "truck": []
     },
@@ -106,6 +111,97 @@
       "unsafe": "",
       "new": ""
     },
-    "last_updated": "2026-07-27T17:25:37.013Z"
+    "loggedBy": {
+      "name": "Coty C",
+      "profile": "demo"
+    },
+    "last_updated": "2026-07-28T11:44:47.239Z"
+  },
+  "2026-07-15": {
+    "unit": "Raiv-T3 / T-51",
+    "tallies": {
+      "robotic": 2,
+      "tieplate": 0,
+      "truck": 1
+    },
+    "notes": {
+      "robotic": "Gripper failed to hold part. Vision system pick or alignment error / detection failure",
+      "tieplate": "",
+      "truck": "Loader magnet malfunction"
+    },
+    "reasons": {
+      "robotic": [
+        "Gripper failed to hold part",
+        "Vision system pick or alignment error / detection failure"
+      ],
+      "tieplate": [],
+      "truck": [
+        "Loader magnet malfunction"
+      ]
+    },
+    "comments": {
+      "unique": "",
+      "unsafe": "",
+      "new": ""
+    },
+    "loggedBy": {
+      "name": "John",
+      "profile": "demo"
+    },
+    "last_updated": "2026-07-28T02:53:34.904Z"
+  },
+  "2026-07-26": {
+    "unit": "Raiv-T2 / T-57",
+    "tallies": {
+      "robotic": 1,
+      "tieplate": 0,
+      "truck": 0
+    },
+    "notes": {
+      "robotic": "False positive on foreign object. Cleared manually.",
+      "tieplate": "",
+      "truck": ""
+    },
+    "reasons": {
+      "robotic": [
+        "False positive detection (foreign object or debris)"
+      ],
+      "tieplate": [],
+      "truck": []
+    },
+    "comments": {
+      "unique": "Likely isolated.",
+      "unsafe": "No safety issues.",
+      "new": ""
+    },
+    "last_updated": "2026-07-26T15:45:21.828Z"
+  },
+  "2026-07-28": {
+    "unit": "",
+    "tallies": {
+      "robotic": 0,
+      "tieplate": 0,
+      "truck": 0
+    },
+    "notes": {
+      "robotic": "",
+      "tieplate": "",
+      "truck": ""
+    },
+    "reasons": {
+      "robotic": [],
+      "tieplate": [],
+      "truck": []
+    },
+    "comments": {
+      "unique": "",
+      "unsafe": "",
+      "new": ""
+    },
+    "loggedBy": {
+      "name": "Coty C",
+      "profile": "demo"
+    },
+    "last_updated": "2026-07-28T11:42:02.219Z"
   }
 }
