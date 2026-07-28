@@ -122,7 +122,7 @@
     "tallies": {
       "robotic": 2,
       "tieplate": 0,
-      "truck": 1
+      "truck": 0
     },
     "notes": {
       "robotic": "Gripper failed to hold part. Vision system pick or alignment error / detection failure",
@@ -135,9 +135,7 @@
         "Vision system pick or alignment error / detection failure"
       ],
       "tieplate": [],
-      "truck": [
-        "Loader magnet malfunction"
-      ]
+      "truck": []
     },
     "comments": {
       "unique": "",
@@ -145,10 +143,10 @@
       "new": ""
     },
     "loggedBy": {
-      "name": "John",
-      "profile": "demo"
+      "name": "Coty",
+      "profile": "developer"
     },
-    "last_updated": "2026-07-28T02:53:34.904Z"
+    "last_updated": "2026-07-28T13:49:22.600Z"
   },
   "2026-07-26": {
     "unit": "Raiv-T2 / T-57",
@@ -204,7 +202,7 @@
       "name": "Coty",
       "profile": "developer"
     },
-    "last_updated": "2026-07-28T13:10:54.189Z"
+    "last_updated": "2026-07-28T13:47:26.175Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-07-28T13:09:37.386Z",
