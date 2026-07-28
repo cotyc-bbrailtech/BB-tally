@@ -196,7 +196,7 @@
         <!-- Unit in Operation -->
         <div class="mb-4 no-print">
             <label class="text-[10px] font-bold text-slate-500 tracking-wider block mb-1.5 pl-0.5">UNIT IN OPERATION</label>
-            <select id="unit-select" onchange="debouncedSave()"
+            <select id="unit-select" onchange="onUnitChange()"
                     class="w-full text-base font-semibold border border-slate-300 focus:border-orange-400 bg-white rounded-2xl px-4 py-3 text-slate-900 shadow-sm">
                 <option value="">-- Select unit --</option>
                 <option value="Raiv-T1 / T-53">Raiv-T1 / T-53</option>
@@ -705,12 +705,14 @@
         const DEVELOPER_PIN = '7735'; // Same deal as ADMIN_PIN — change to your own value, just keep it different from ADMIN_PIN.
         const REASON_REGISTRY_KEY = 'bb_tally_reason_registry_v1';
         const REASON_REGISTRY_FIELD = '_reasonRegistry'; // sibling key alongside date entries in the synced GitHub JSON — never a valid date, so the day-iteration loops skip it
+        const UNASSIGNED_UNIT = '(unassigned unit)'; // fallback unit label so a day-entry key is always well-formed even with no unit picked
         let currentData = {};
         let currentDateStr = '';
         let chartInstance = null;
         let saveTimeout = null;
         let customReasons = { robotic: [], tieplate: [], truck: [] };
-        let deletedDates = {}; // { 'YYYY-MM-DD': isoTimestampOfDeletion } — tombstones so a cloud merge can't resurrect a deleted day
+        let deletedDates = {}; // { 'dateStr|unit': isoTimestampOfDeletion } — tombstones so a cloud merge can't resurrect a deleted entry
+        let lastSeenUpdated = {}; // session-local: { 'dateStr|unit': last last_updated this session actually saw } — powers the "someone else edited this" warning
         let userProfile = null; // { name, profile: 'admin'|'fieldops'|'demo'|'developer' } | null — null means never configured, defaults to Demo
         let reasonRegistry = null; // { _updated, robotic:[{id,label,value,icon}], tieplate:[...], truck:[...] } — populated by loadReasonRegistry() at boot
         let developerUnlocked = false; // in-memory only, never persisted — re-locks whenever you leave the Dashboard tab
@@ -826,17 +828,30 @@
             return count;
         }
 
-        // Rewrites every historical day's structured reasons[category] array from oldValue to newValue.
+        // Rewrites every historical day's structured reasons from oldValue to newValue. Updates the
+        // reasonLog entries' text (then re-derives reasons/tallies from it) rather than mutating the
+        // derived reasons[category] array directly — that array gets regenerated from reasonLog on
+        // every tally change, so mutating it in place here would get silently undone by the next +1/-1.
         // Deliberately leaves notes[category] untouched — that's user-typed prose, not structured data.
         function rewriteHistoricalReasonValue(category, oldValue, newValue) {
             if (oldValue === newValue) return;
-            Object.keys(currentData).forEach(dateStr => {
-                const entry = currentData[dateStr];
-                const arr = entry && entry.reasons && entry.reasons[category];
-                if (!Array.isArray(arr)) return;
+            Object.keys(currentData).forEach(key => {
+                const entry = currentData[key];
+                if (!entry) return;
                 let changed = false;
-                for (let i = 0; i < arr.length; i++) {
-                    if (arr[i] === oldValue) { arr[i] = newValue; changed = true; }
+                if (entry.reasonLog && Array.isArray(entry.reasonLog[category])) {
+                    entry.reasonLog[category].forEach(e => {
+                        if (e.text === oldValue) { e.text = newValue; changed = true; }
+                    });
+                    if (changed) recomputeDerivedTallyFields(entry);
+                } else {
+                    // Legacy entry with no reasonLog yet — fall back to mutating reasons[] directly.
+                    const arr = entry.reasons && entry.reasons[category];
+                    if (Array.isArray(arr)) {
+                        for (let i = 0; i < arr.length; i++) {
+                            if (arr[i] === oldValue) { arr[i] = newValue; changed = true; }
+                        }
+                    }
                 }
                 if (changed) entry.last_updated = new Date().toISOString();
             });
@@ -974,6 +989,117 @@
             return `https://api.github.com/repos/${ghConfig.owner}/${ghConfig.repo}/contents/${p}`;
         }
 
+        // Rekeys any legacy bare-date entry ("2026-07-28") to the compound "date|unit" scheme in
+        // place. Self-guarding (skips anything already containing '|'), so it's safe/cheap to call
+        // on any store repeatedly — the local store at boot, and freshly-decoded remote data before
+        // it's merged, so an unmigrated device's old-shaped push can't reintroduce bare-date keys
+        // into an already-migrated store.
+        function rekeyLegacyDateOnlyEntries(store) {
+            Object.keys(store).forEach(key => {
+                if (key === REASON_REGISTRY_FIELD || key.includes('|')) return;
+                const entry = store[key];
+                const unit = ((entry && entry.unit) || '').trim() || UNASSIGNED_UNIT;
+                store[key + '|' + unit] = entry;
+                delete store[key];
+            });
+            return store;
+        }
+
+        // Union-merge one category's reasonLog by id, tombstones sticky: a deletion recorded by
+        // either side always wins over that same id merely "still appearing alive" on the other —
+        // that's missing information on the other side, not a conflicting claim, so it's never
+        // treated as a real conflict. This is what makes two devices' independent reason picks/
+        // removals on the same day both survive a sync, instead of one whole-entry timestamp
+        // comparison discarding one side's tallies entirely.
+        function mergeReasonLogArray(localArr, remoteArr) {
+            const byId = new Map();
+            (localArr || []).forEach(e => byId.set(e.id, { ...e }));
+            (remoteArr || []).forEach(e => {
+                const existing = byId.get(e.id);
+                if (!existing) { byId.set(e.id, { ...e }); return; }
+                if (e.deletedAt && !existing.deletedAt) {
+                    existing.deletedAt = e.deletedAt;
+                } else if (existing.deletedAt && e.deletedAt) {
+                    existing.deletedAt = Date.parse(existing.deletedAt) <= Date.parse(e.deletedAt) ? existing.deletedAt : e.deletedAt;
+                }
+                // A Developer rename/merge (rewriteHistoricalReasonValue) can change .text after
+                // creation — take whichever side's text is different from the seed, so a rename
+                // made on one device before syncing isn't lost.
+                if (e.text !== existing.text) existing.text = e.text;
+            });
+            return Array.from(byId.values());
+        }
+
+        // Merges two versions of the same day+unit entry. reasonLog (and the tallies/reasons
+        // derived from it) is genuinely additive — see mergeReasonLogArray. unit/notes/comments/
+        // loggedBy stay a single last-write-wins bundle rather than per-field merge state, per the
+        // scope of this fix (saveCurrent()'s conflict-warning dialog is what protects against
+        // silently losing those in the common same-session case).
+        function mergeDayEntry(local, remote) {
+            if (!local) return remote;
+            if (!remote) return local;
+
+            const lTime = local.last_updated ? Date.parse(local.last_updated) : 0;
+            const rTime = remote.last_updated ? Date.parse(remote.last_updated) : 0;
+            const remoteWins = rTime >= lTime;
+            const winningWholeFields = remoteWins ? remote : local;
+
+            const merged = {
+                unit: winningWholeFields.unit || '',
+                notes: { ...(winningWholeFields.notes || {}) },
+                comments: { ...(winningWholeFields.comments || {}) },
+                loggedBy: winningWholeFields.loggedBy || null,
+                reasons: { robotic: [], tieplate: [], truck: [] },
+                reasonLog: {},
+                tallies: { robotic: 0, tieplate: 0, truck: 0 },
+                last_updated: new Date(Math.max(lTime, rTime)).toISOString()
+            };
+            ['robotic', 'tieplate', 'truck'].forEach(cat => {
+                merged.reasonLog[cat] = mergeReasonLogArray(
+                    (local.reasonLog && local.reasonLog[cat]) || [],
+                    (remote.reasonLog && remote.reasonLog[cat]) || []
+                );
+            });
+            recomputeDerivedTallyFields(merged);
+            return merged;
+        }
+
+        // Merges two whole day-stores (never touches the reason registry — that's merged separately
+        // by mergeReasonRegistryFromRemote). Pure: no fetch, no DOM. Shared by initCloud()'s pull and
+        // pushFullStoreToGithub()'s conflict-retry, so a retry after a 409/422 re-merges against
+        // what's actually on GitHub instead of blindly resending a stale snapshot.
+        function mergeStores(localStore, remoteStore) {
+            const local = localStore || {};
+            const merged = { ...local };
+            let tombstonesChanged = false;
+            Object.keys(remoteStore || {}).forEach(date => {
+                if (date === REASON_REGISTRY_FIELD) return; // not a day entry — handled separately
+                const r = remoteStore[date];
+                const l = local[date];
+                const rTime = r.last_updated ? Date.parse(r.last_updated) : 0;
+                // A legacy bare-date tombstone (from before unit-partitioning) should still suppress
+                // every unit-partitioned descendant of that date, since we can't know which unit it
+                // originally applied to — conservative/safe direction.
+                const legacyDateTombstone = deletedDates[date.split('|')[0]] ? Date.parse(deletedDates[date.split('|')[0]]) : 0;
+                const deletedAt = Math.max(
+                    deletedDates[date] ? Date.parse(deletedDates[date]) : 0,
+                    legacyDateTombstone
+                );
+                if (deletedAt) {
+                    if (deletedAt >= rTime) {
+                        // This device deleted the day after the remote copy was last touched — honor the deletion.
+                        delete merged[date];
+                        return;
+                    }
+                    // Remote has a newer edit than our deletion — someone re-added it, so un-delete here too.
+                    if (deletedDates[date]) { delete deletedDates[date]; tombstonesChanged = true; }
+                    if (deletedDates[date.split('|')[0]]) { delete deletedDates[date.split('|')[0]]; tombstonesChanged = true; }
+                }
+                merged[date] = mergeDayEntry(l, r);
+            });
+            return { merged, tombstonesChanged };
+        }
+
         /** Load shared tallies from GitHub (data/tallies.json in the repo) */
         async function initCloud() {
             loadGhConfig();
@@ -1000,7 +1126,7 @@
                 if (res.status === 404) {
                     // File doesn't exist yet — create empty store
                     ghFileSha = null;
-                    await pushFullStoreToGithub(currentData || {});
+                    await pushFullStoreToGithub();
                     cloudAvailable = true;
                     cloudStatus = 'online';
                     updateCloudBadge();
@@ -1013,33 +1139,9 @@
                 const body = await res.json();
                 ghFileSha = body.sha;
                 const decoded = JSON.parse(atob(body.content.replace(/\n/g, '')));
+                rekeyLegacyDateOnlyEntries(decoded);
                 mergeReasonRegistryFromRemote(decoded && decoded[REASON_REGISTRY_FIELD]);
-                // Merge remote with local
-                const local = currentData || {};
-                const merged = { ...local };
-                let tombstonesChanged = false;
-                Object.keys(decoded || {}).forEach(date => {
-                    if (date === REASON_REGISTRY_FIELD) return; // not a day entry — handled above
-                    const r = decoded[date];
-                    const l = local[date];
-                    const rTime = r.last_updated ? Date.parse(r.last_updated) : 0;
-                    const deletedAt = deletedDates[date] ? Date.parse(deletedDates[date]) : 0;
-                    if (deletedAt) {
-                        if (deletedAt >= rTime) {
-                            // This device deleted the day after the remote copy was last touched — honor the deletion.
-                            delete merged[date];
-                            return;
-                        }
-                        // Remote has a newer edit than our deletion — someone re-added it, so un-delete here too.
-                        delete deletedDates[date];
-                        tombstonesChanged = true;
-                    }
-                    if (!l) merged[date] = r;
-                    else {
-                        const lTime = l.last_updated ? Date.parse(l.last_updated) : 0;
-                        merged[date] = rTime >= lTime ? r : l;
-                    }
-                });
+                const { merged, tombstonesChanged } = mergeStores(currentData, decoded);
                 if (tombstonesChanged) saveDeletedDates();
                 currentData = merged;
                 saveDataLocal();
@@ -1127,14 +1229,34 @@
         function scheduleGithubPush() {
             if (ghPushTimer) clearTimeout(ghPushTimer);
             ghPushTimer = setTimeout(() => {
-                pushFullStoreToGithub(currentData);
+                pushFullStoreToGithub();
             }, 1200);
         }
 
-        async function pushFullStoreToGithub(data) {
+        async function fetchRemoteStore() {
+            const res = await fetch(ghContentsUrl() + '?ref=main', { headers: ghHeaders(), cache: 'no-store' });
+            if (res.status === 404) return { store: {}, sha: null };
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || ('HTTP ' + res.status));
+            }
+            const body = await res.json();
+            return { store: JSON.parse(atob(body.content.replace(/\n/g, ''))), sha: body.sha };
+        }
+
+        // Always binds to the live `currentData` global (never a snapshot passed in) so a conflict
+        // retry re-merges against current state, not whatever was true when the 1200ms debounce fired.
+        async function pushFullStoreToGithub(attempt = 0) {
             if (!ghConfig) return;
+            const MAX_PUSH_ATTEMPTS = 3;
             try {
-                const wireData = reasonRegistry ? { ...data, [REASON_REGISTRY_FIELD]: reasonRegistry } : data;
+                // Flush any edit still sitting in its own debounce window before serializing.
+                if (saveTimeout) {
+                    clearTimeout(saveTimeout);
+                    saveTimeout = null;
+                    saveCurrent();
+                }
+                const wireData = reasonRegistry ? { ...currentData, [REASON_REGISTRY_FIELD]: reasonRegistry } : currentData;
                 const content = btoa(unescape(encodeURIComponent(JSON.stringify(wireData, null, 2))));
                 const payload = {
                     message: `Update tallies ${new Date().toISOString().slice(0, 16)}`,
@@ -1148,31 +1270,27 @@
                     headers: { ...ghHeaders(), 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+
                 if (res.status === 409 || res.status === 422) {
-                    // SHA conflict — re-fetch and retry once
-                    const getRes = await fetch(ghContentsUrl() + '?ref=main', { headers: ghHeaders(), cache: 'no-store' });
-                    if (getRes.ok) {
-                        const body = await getRes.json();
-                        ghFileSha = body.sha;
-                        payload.sha = ghFileSha;
-                        const retry = await fetch(ghContentsUrl(), {
-                            method: 'PUT',
-                            headers: { ...ghHeaders(), 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        if (!retry.ok) throw new Error('retry failed ' + retry.status);
-                        const out = await retry.json();
-                        ghFileSha = out.content?.sha || ghFileSha;
-                    } else {
-                        throw new Error('conflict resolve failed');
-                    }
-                } else if (!res.ok) {
+                    if (attempt + 1 >= MAX_PUSH_ATTEMPTS) throw new Error('conflict retry budget exhausted');
+                    // Re-fetch and properly re-merge before retrying — never blindly resend a stale
+                    // snapshot, since that's exactly what silently destroyed the other side's write before.
+                    const remote = await fetchRemoteStore();
+                    rekeyLegacyDateOnlyEntries(remote.store);
+                    mergeReasonRegistryFromRemote(remote.store[REASON_REGISTRY_FIELD]);
+                    const { merged, tombstonesChanged } = mergeStores(currentData, remote.store);
+                    if (tombstonesChanged) saveDeletedDates();
+                    currentData = merged;
+                    saveDataLocal();
+                    ghFileSha = remote.sha;
+                    return pushFullStoreToGithub(attempt + 1);
+                }
+                if (!res.ok) {
                     const err = await res.json().catch(() => ({}));
                     throw new Error(err.message || ('HTTP ' + res.status));
-                } else {
-                    const out = await res.json();
-                    ghFileSha = out.content?.sha || ghFileSha;
                 }
+                const out = await res.json();
+                ghFileSha = out.content?.sha || ghFileSha;
                 cloudAvailable = true;
                 cloudStatus = 'online';
                 updateCloudBadge();
@@ -1461,46 +1579,61 @@
         }
         
         // Load a specific date into the form
+        // Loads whichever entry currentKey() now points to (date + whatever unit is currently
+        // selected) — the unit dropdown is an INPUT to which entry loads, not an output of it.
         function loadDate(dateStr) {
             currentDateStr = dateStr;
             document.getElementById('current-date').value = dateStr;
             updateDayName(dateStr);
-            
-            const entry = currentData[dateStr] || {
+
+            const key = currentKey();
+            const entry = currentData[key] || {
                 unit: '',
                 tallies: { robotic: 0, tieplate: 0, truck: 0 },
                 notes: { robotic: '', tieplate: '', truck: '' },
                 reasons: { robotic: [], tieplate: [], truck: [] },
+                reasonLog: { robotic: [], tieplate: [], truck: [] },
                 comments: { unique: '', unsafe: '', new: '' },
                 last_updated: null
             };
-            
-            // Ensure reasons structure exists even on older entries
+
+            // Ensure reasons/reasonLog structure exists even on older entries
             if (!entry.reasons) {
                 entry.reasons = { robotic: [], tieplate: [], truck: [] };
             }
-            
-            // Populate unit
-            const unitSelect = document.getElementById('unit-select');
-            if (unitSelect) unitSelect.value = entry.unit || '';
-            
+            if (!entry.reasonLog) {
+                entry.reasonLog = { robotic: [], tieplate: [], truck: [] };
+            }
+
             // Populate tallies
             document.getElementById('robotic-count').textContent = entry.tallies.robotic || 0;
             document.getElementById('tieplate-count').textContent = entry.tallies.tieplate || 0;
             document.getElementById('truck-count').textContent = entry.tallies.truck || 0;
-            
+
             // Populate notes
             document.getElementById('robotic-notes').value = entry.notes.robotic || '';
             document.getElementById('tieplate-notes').value = entry.notes.tieplate || '';
             document.getElementById('truck-notes').value = entry.notes.truck || '';
-            
+
             // Populate comments
             document.getElementById('comment-unique').value = entry.comments.unique || '';
             document.getElementById('comment-unsafe').value = entry.comments.unsafe || '';
             document.getElementById('comment-new').value = entry.comments.new || '';
-            
+
             updateTotalCount();
             updateLastSaved(entry.last_updated);
+            lastSeenUpdated[key] = entry.last_updated;
+        }
+
+        // Fires when the unit dropdown changes — it now determines WHICH entry is being viewed,
+        // not just a label on whatever entry happened to load, so switching it reloads the form.
+        function onUnitChange() {
+            if (saveTimeout) {
+                clearTimeout(saveTimeout);
+                saveTimeout = null;
+                saveCurrent();
+            }
+            loadDate(currentDateStr);
         }
         
         // Update total count display
@@ -1671,13 +1804,67 @@
             selectReason(text);
         }
 
-        // Core function: increment + log reason + update notes
+        // ---------- Day-entry keying (date + unit) and derived-tally helpers ----------
+        // Two different units worked concurrently on the same calendar date used to collide into
+        // one shared entry. Keying by date+unit keeps them separate; the merge algorithm, Insights
+        // aggregation, and reason-usage code are all already key-shape-agnostic (they iterate
+        // Object.keys(currentData) and never parse the key itself), so this needs no changes there.
+        function currentKey() {
+            const unitSelect = document.getElementById('unit-select');
+            const unit = (unitSelect && unitSelect.value) || UNASSIGNED_UNIT;
+            return currentDateStr + '|' + unit;
+        }
+
+        function generateLogEntryId(category) {
+            return `${category}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        }
+
+        // tallies[category] and reasons[category] are derived views, recomputed from whichever
+        // reasonLog[category] entries aren't tombstoned (deletedAt set) — this is what makes a
+        // decrement/reset structurally incapable of drifting out of sync with the log again, and
+        // what makes the log itself mergeable across devices (see mergeReasonLog).
+        function recomputeDerivedTallyFields(entry) {
+            ['robotic', 'tieplate', 'truck'].forEach(cat => {
+                const log = (entry.reasonLog && entry.reasonLog[cat]) || [];
+                const alive = log.filter(e => !e.deletedAt).sort((a, b) => Date.parse(a.addedAt) - Date.parse(b.addedAt));
+                entry.reasons[cat] = alive.map(e => e.text);
+                entry.tallies[cat] = alive.length;
+            });
+        }
+
+        // One-time-per-entry backfill: synthesizes a reasonLog for any entry that predates this
+        // feature, from whatever reasons[] it already has. Self-guarding (skips entries that already
+        // have a reasonLog), so it's safe to call on every boot. Timestamps/attribution are the best
+        // available approximation (the entry's own last_updated/loggedBy) — this can't recover
+        // whether those reasons were really picked in one sitting or across a shift handoff, since
+        // the old snapshot model never recorded that; it only avoids losing the reasons themselves.
+        function backfillReasonLogs(store) {
+            Object.keys(store).forEach(key => {
+                const entry = store[key];
+                if (!entry || entry.reasonLog) return;
+                const ts = entry.last_updated || new Date(0).toISOString();
+                if (!entry.reasons) entry.reasons = { robotic: [], tieplate: [], truck: [] };
+                if (!entry.tallies) entry.tallies = { robotic: 0, tieplate: 0, truck: 0 };
+                entry.reasonLog = {};
+                ['robotic', 'tieplate', 'truck'].forEach(cat => {
+                    const texts = (entry.reasons && entry.reasons[cat]) || [];
+                    entry.reasonLog[cat] = texts.map(text => ({
+                        id: generateLogEntryId(cat),
+                        text,
+                        addedAt: ts,
+                        addedBy: entry.loggedBy || null,
+                        deletedAt: null
+                    }));
+                });
+                // Correct tallies/reasons to match the log we just built — this is what makes any
+                // pre-existing "tally count doesn't match reasons logged" drift self-heal on the
+                // first load after this feature ships, rather than only affecting future edits.
+                recomputeDerivedTallyFields(entry);
+            });
+        }
+
+        // Core function: log reason + update notes; tally count is derived from the reason log (see recomputeDerivedTallyFields)
         function recordTallyWithReason(category, reasonText) {
-            const countEl = document.getElementById(`${category}-count`);
-            let current = parseInt(countEl.textContent) || 0;
-            current += 1;
-            countEl.textContent = current;
-            
             // Append to notes if not already present
             const notesEl = document.getElementById(`${category}-notes`);
             if (notesEl) {
@@ -1689,33 +1876,49 @@
                     notesEl.value = currentNotes + separator + reasonText;
                 }
             }
-            
-            // Push into structured reasons array
+
             ensureReasonsArray(category);
-            const entry = currentData[currentDateStr];
-            if (entry && entry.reasons) {
-                entry.reasons[category].push(reasonText);
-            }
-            
+            const entry = currentData[currentKey()];
+            entry.reasonLog[category].push({
+                id: generateLogEntryId(category),
+                text: reasonText,
+                addedAt: new Date().toISOString(),
+                addedBy: { name: getProfileName(), profile: getProfile() },
+                deletedAt: null
+            });
+            recomputeDerivedTallyFields(entry);
+            document.getElementById(`${category}-count`).textContent = entry.tallies[category];
+
             updateTotalCount();
             debouncedSave();
         }
 
-        // Simple count adjuster (used by − and Reset buttons)
+        // Simple count adjuster (used by − and Reset buttons) — tombstones/adds reasonLog entries
+        // rather than touching the count directly, so the derived tally can never drift from the log again.
         function adjustTally(category, delta) {
-            const countEl = document.getElementById(`${category}-count`);
-            const current = parseInt(countEl.textContent) || 0;
-            const next = Math.max(0, current + delta);
-            countEl.textContent = next;
-
-            // Keep the structured reasons log in sync with a manual decrement — otherwise a picked
-            // reason stays recorded (and keeps showing in Insights/Excel) forever, even after the
-            // +1 that logged it gets undone.
-            if (next < current && currentDateStr) {
-                ensureReasonsArray(category);
-                const arr = currentData[currentDateStr].reasons[category];
-                if (arr.length > 0) arr.pop();
+            if (!currentDateStr) return;
+            ensureReasonsArray(category);
+            const entry = currentData[currentKey()];
+            const steps = Math.abs(delta);
+            for (let i = 0; i < steps; i++) {
+                const alive = entry.reasonLog[category]
+                    .filter(e => !e.deletedAt)
+                    .sort((a, b) => Date.parse(a.addedAt) - Date.parse(b.addedAt));
+                if (delta < 0) {
+                    if (alive.length === 0) break;
+                    alive[alive.length - 1].deletedAt = new Date().toISOString();
+                } else {
+                    entry.reasonLog[category].push({
+                        id: generateLogEntryId(category),
+                        text: '(tally adjusted without a reason)',
+                        addedAt: new Date().toISOString(),
+                        addedBy: { name: getProfileName(), profile: getProfile() },
+                        deletedAt: null
+                    });
+                }
             }
+            recomputeDerivedTallyFields(entry);
+            document.getElementById(`${category}-count`).textContent = entry.tallies[category];
 
             updateTotalCount();
             debouncedSave();
@@ -1725,53 +1928,68 @@
             }
         }
 
-        // Ensure the current day's entry has a reasons object with arrays
+        // Ensure the current day+unit's entry has a reasons/reasonLog object with arrays
         function ensureReasonsArray(category) {
             if (!currentDateStr) return;
-            if (!currentData[currentDateStr]) {
+            const key = currentKey();
+            if (!currentData[key]) {
                 const unitSelect = document.getElementById('unit-select');
-                currentData[currentDateStr] = {
+                currentData[key] = {
                     unit: unitSelect ? unitSelect.value : '',
                     tallies: { robotic: 0, tieplate: 0, truck: 0 },
                     notes: { robotic: '', tieplate: '', truck: '' },
                     reasons: { robotic: [], tieplate: [], truck: [] },
+                    reasonLog: { robotic: [], tieplate: [], truck: [] },
                     comments: { unique: '', unsafe: '', new: '' },
                     loggedBy: { name: getProfileName(), profile: getProfile() },
                     last_updated: null
                 };
             }
-            const entry = currentData[currentDateStr];
+            const entry = currentData[key];
             if (!entry.reasons) {
                 entry.reasons = { robotic: [], tieplate: [], truck: [] };
+            }
+            if (!entry.reasonLog) {
+                entry.reasonLog = { robotic: [], tieplate: [], truck: [] };
             }
             if (!Array.isArray(entry.reasons[category])) {
                 entry.reasons[category] = [];
             }
+            if (!Array.isArray(entry.reasonLog[category])) {
+                entry.reasonLog[category] = [];
+            }
         }
-        
-        // Reset single tally
+
+        // Reset single tally — tombstones every currently-alive reasonLog entry for this category
         function resetTally(category) {
-            const countEl = document.getElementById(`${category}-count`);
-            countEl.textContent = '0';
             if (currentDateStr) {
                 ensureReasonsArray(category);
-                currentData[currentDateStr].reasons[category] = [];
+                const entry = currentData[currentKey()];
+                const now = new Date().toISOString();
+                entry.reasonLog[category].forEach(e => { if (!e.deletedAt) e.deletedAt = now; });
+                recomputeDerivedTallyFields(entry);
             }
+            document.getElementById(`${category}-count`).textContent = '0';
             updateTotalCount();
             debouncedSave();
         }
 
-        // Reset all tallies for current day
+        // Reset all tallies for current day+unit
         function resetAllTallies() {
             if (!confirm('Reset all tallies for today to zero?')) return;
 
+            if (currentDateStr) {
+                ensureReasonsArray('robotic'); // guarantees the full entry (all 3 categories) exists
+                const entry = currentData[currentKey()];
+                const now = new Date().toISOString();
+                ['robotic', 'tieplate', 'truck'].forEach(cat => {
+                    entry.reasonLog[cat].forEach(e => { if (!e.deletedAt) e.deletedAt = now; });
+                });
+                recomputeDerivedTallyFields(entry);
+            }
             document.getElementById('robotic-count').textContent = '0';
             document.getElementById('tieplate-count').textContent = '0';
             document.getElementById('truck-count').textContent = '0';
-            if (currentDateStr) {
-                ['robotic', 'tieplate', 'truck'].forEach(cat => ensureReasonsArray(cat));
-                currentData[currentDateStr].reasons = { robotic: [], tieplate: [], truck: [] };
-            }
             updateTotalCount();
             debouncedSave();
         }
@@ -1785,28 +2003,50 @@
         }
         
         // Save current form state
-        function saveCurrent(showToastMsg = false) {
+        function saveCurrent(showToastMsg = false, skipConflictCheck = false) {
             if (!currentDateStr) return;
-            
-            // Preserve any structured reasons already accumulated today
-            const existingReasons = (currentData[currentDateStr] && currentData[currentDateStr].reasons)
-                ? currentData[currentDateStr].reasons
-                : { robotic: [], tieplate: [], truck: [] };
-            
+            const key = currentKey();
+
+            // Warn (rather than silently clobber) if someone else's save landed on this exact
+            // entry since this session last saw it — tallies/reasons/reasonLog are carried forward
+            // untouched below regardless, so this only actually risks unit/notes/comments.
+            if (!skipConflictCheck) {
+                const priorEntry = currentData[key];
+                const priorTime = priorEntry?.last_updated ? Date.parse(priorEntry.last_updated) : 0;
+                const lastSeenTime = lastSeenUpdated[key] ? Date.parse(lastSeenUpdated[key]) : 0;
+                if (priorEntry && priorTime > lastSeenTime) {
+                    const who = formatLoggedBy(priorEntry) || 'another device';
+                    const when = new Date(priorEntry.last_updated).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    const overwrite = confirm(
+                        `${who} saved an update to this entry at ${when} — after you last opened it here.\n\n` +
+                        `Saving now will overwrite their unit, notes, and comments with what's on this screen.\n\n` +
+                        `OK = save anyway.  Cancel = reload their version (you'll lose what you typed here).`
+                    );
+                    if (!overwrite) {
+                        loadDate(currentDateStr);
+                        return;
+                    }
+                }
+            }
+
+            // Tallies/reasons/reasonLog are derived and already kept in sync by every mutator —
+            // carry them forward as-is rather than re-deriving from DOM text.
+            const existing = currentData[key];
+            const existingTallies = existing?.tallies || { robotic: 0, tieplate: 0, truck: 0 };
+            const existingReasons = existing?.reasons || { robotic: [], tieplate: [], truck: [] };
+            const existingReasonLog = existing?.reasonLog || { robotic: [], tieplate: [], truck: [] };
+
             const unitSelect = document.getElementById('unit-select');
             const entry = {
                 unit: unitSelect ? unitSelect.value : '',
-                tallies: {
-                    robotic: parseInt(document.getElementById('robotic-count').textContent) || 0,
-                    tieplate: parseInt(document.getElementById('tieplate-count').textContent) || 0,
-                    truck: parseInt(document.getElementById('truck-count').textContent) || 0
-                },
+                tallies: existingTallies,
                 notes: {
                     robotic: document.getElementById('robotic-notes').value.trim(),
                     tieplate: document.getElementById('tieplate-notes').value.trim(),
                     truck: document.getElementById('truck-notes').value.trim()
                 },
                 reasons: existingReasons,
+                reasonLog: existingReasonLog,
                 comments: {
                     unique: document.getElementById('comment-unique').value.trim(),
                     unsafe: document.getElementById('comment-unsafe').value.trim(),
@@ -1815,15 +2055,16 @@
                 loggedBy: { name: getProfileName(), profile: getProfile() },
                 last_updated: new Date().toISOString()
             };
-            
-            currentData[currentDateStr] = entry;
+
+            currentData[key] = entry;
             saveData();
+            lastSeenUpdated[key] = entry.last_updated;
             updateLastSaved(entry.last_updated);
-            
+
             if (showToastMsg) {
                 showToast('Entry saved successfully');
             }
-            
+
             // Refresh history if visible
             if (!document.getElementById('history-view').classList.contains('hidden')) {
                 renderHistory();
@@ -2142,19 +2383,20 @@
                 return;
             }
             
-            sortedDates.forEach(dateStr => {
-                const entry = dataToShow[dateStr];
+            sortedDates.forEach(key => {
+                const entry = dataToShow[key];
+                const dateStr = key.split('|')[0];
                 const total = (entry.tallies.robotic || 0) + (entry.tallies.tieplate || 0) + (entry.tallies.truck || 0);
-                
+
                 const row = document.createElement('div');
                 row.className = `history-row bg-white border border-slate-200 rounded-3xl px-4 py-3 flex items-center cursor-pointer active:bg-slate-50`;
-                
+
                 const unitLabel = entry.unit ? `<span class="ml-2 text-[11px] font-medium px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full">${escapeHtml(entry.unit)}</span>` : '';
                 const loggedByLabel = formatLoggedBy(entry);
                 const loggedByBadge = loggedByLabel ? `<span class="ml-2 text-[11px] font-medium px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full">${escapeHtml(loggedByLabel)}</span>` : '';
 
                 row.innerHTML = `
-                    <div class="flex-1 min-w-0" onclick="loadHistoryEntry('${dateStr}')">
+                    <div class="flex-1 min-w-0" onclick="loadHistoryEntry('${key}')">
                         <div class="flex items-baseline justify-between">
                             <div class="flex items-center flex-wrap gap-y-1">
                                 <span class="font-semibold text-slate-900">${formatDisplayDate(dateStr)}</span>
@@ -2193,7 +2435,7 @@
                     </div>
                     
                     <div class="pl-3 flex flex-col items-end gap-y-1">
-                        <button onclick="event.stopImmediatePropagation(); deleteEntry('${dateStr}');" 
+                        <button onclick="event.stopImmediatePropagation(); deleteEntry('${key}');"
                                 class="text-red-400 hover:text-red-600 p-1 active:scale-90 transition-transform">
                             <i class="fa-solid fa-trash text-sm"></i>
                         </button>
@@ -2204,8 +2446,13 @@
             });
         }
         
-        // Load entry from history into form
-        function loadHistoryEntry(dateStr) {
+        // Load entry from history into form — key is the compound "dateStr|unit" key
+        function loadHistoryEntry(key) {
+            const sep = key.indexOf('|');
+            const dateStr = sep === -1 ? key : key.slice(0, sep);
+            const unit = sep === -1 ? '' : key.slice(sep + 1);
+            const unitSelect = document.getElementById('unit-select');
+            if (unitSelect) unitSelect.value = (unit === UNASSIGNED_UNIT) ? '' : unit;
             loadDate(dateStr);
             switchView('tally');
             
@@ -2224,20 +2471,21 @@
             }, 350);
         }
         
-        // Delete a history entry
-        function deleteEntry(dateStr) {
+        // Delete a history entry — key is the compound "dateStr|unit" key
+        function deleteEntry(key) {
+            const dateStr = key.split('|')[0];
             if (!confirm(`Delete the entry for ${formatDisplayDate(dateStr)}? This cannot be undone.`)) return;
 
-            delete currentData[dateStr];
-            deletedDates[dateStr] = new Date().toISOString();
+            delete currentData[key];
+            deletedDates[key] = new Date().toISOString();
             saveDeletedDates();
             saveDataLocal();
-            deleteDayFromCloud(dateStr);
+            deleteDayFromCloud(key);
             renderHistory();
             showToast('Entry deleted');
-            
-            // If we deleted the current day, reset to today
-            if (dateStr === currentDateStr) {
+
+            // If we deleted the entry currently open in the Tally view, reset to today
+            if (key === currentKey()) {
                 goToToday();
             }
         }
@@ -2251,8 +2499,9 @@
             }
             
             const filtered = {};
-            Object.keys(currentData).forEach(dateStr => {
-                const entry = currentData[dateStr];
+            Object.keys(currentData).forEach(key => {
+                const entry = currentData[key];
+                const dateStr = key.split('|')[0];
                 const haystack = [
                     dateStr,
                     formatDisplayDate(dateStr),
@@ -2264,9 +2513,9 @@
                     entry.comments.unsafe || '',
                     entry.comments.new || ''
                 ].join(' ').toLowerCase();
-                
+
                 if (haystack.includes(term)) {
-                    filtered[dateStr] = entry;
+                    filtered[key] = entry;
                 }
             });
             
@@ -2312,14 +2561,18 @@
             renderInsights();
         }
 
+        // Despite the name, returns compound "dateStr|unit" keys (kept for minimal call-site
+        // churn) — every caller already just uses these as currentData lookup keys.
         function getFilteredDates() {
-            const allDates = Object.keys(currentData).sort();
-            if (insightsRange === 'all') return allDates;
-            
+            const allKeys = Object.keys(currentData).sort();
+            if (insightsRange === 'all') return allKeys;
+
             const cutoff = new Date();
             cutoff.setDate(cutoff.getDate() - Number(insightsRange));
             const cutoffStr = cutoff.toISOString().split('T')[0];
-            return allDates.filter(d => d >= cutoffStr);
+            // Compare the date part explicitly rather than relying on lexicographic string
+            // comparison happening to work because compound keys share the date prefix.
+            return allKeys.filter(k => k.split('|')[0] >= cutoffStr);
         }
 
         function renderInsights() {
@@ -2459,7 +2712,7 @@
             }
             
             const labels = sorted.map(d => {
-                const dt = new Date(d + 'T00:00:00');
+                const dt = new Date(d.split('|')[0] + 'T00:00:00');
                 return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             });
             
@@ -2533,15 +2786,17 @@
             }
             
             // Daily totals CSV
-            let csv = 'Date,Robotic System,Tie Plate Setter,Truck Malfunction,Total,Logged By Name,Logged By Profile\n';
+            let csv = 'Date,Unit,Robotic System,Tie Plate Setter,Truck Malfunction,Total,Logged By Name,Logged By Profile\n';
             dates.forEach(d => {
                 const e = currentData[d];
+                const dateOnly = d.split('|')[0];
                 const r = e.tallies.robotic || 0;
                 const t = e.tallies.tieplate || 0;
                 const u = e.tallies.truck || 0;
+                const safeUnit = `"${(e.unit || '').replace(/"/g, '""')}"`;
                 const safeName = `"${(e.loggedBy?.name || '').replace(/"/g, '""')}"`;
                 const loggedByProfile = e.loggedBy?.profile ? (PROFILE_LABELS[e.loggedBy.profile] || e.loggedBy.profile) : '';
-                csv += `${d},${r},${t},${u},${r + t + u},${safeName},${loggedByProfile}\n`;
+                csv += `${dateOnly},${safeUnit},${r},${t},${u},${r + t + u},${safeName},${loggedByProfile}\n`;
             });
             
             // Reason frequency section
@@ -2628,7 +2883,7 @@
                 const t = e.tallies?.tieplate || 0;
                 const u = e.tallies?.truck || 0;
                 summaryRows.push([
-                    d,
+                    d.split('|')[0],
                     e.unit || '',
                     r, t, u, r + t + u,
                     e.notes?.robotic || '',
@@ -2649,12 +2904,13 @@
             ];
             dates.forEach(d => {
                 const e = currentData[d];
+                const dateOnly = d.split('|')[0];
                 const unit = e.unit || '';
                 if (e.reasons) {
                     ['robotic', 'tieplate', 'truck'].forEach(cat => {
                         const catLabel = { robotic: 'Robotic System', tieplate: 'Tie Plate Setter', truck: 'Truck Malfunction' }[cat];
                         (e.reasons[cat] || []).forEach(reason => {
-                            reasonRows.push([d, unit, catLabel, reason]);
+                            reasonRows.push([dateOnly, unit, catLabel, reason]);
                         });
                     });
                 }
@@ -2704,19 +2960,18 @@
                 reader.onload = ev => {
                     try {
                         const imported = JSON.parse(ev.target.result);
+                        // Normalize through the same migration helpers real boot data goes through —
+                        // an older export could be bare-date-keyed and/or predate the reason log, and
+                        // its tallies shouldn't be trusted over whatever reasons are actually recorded.
+                        rekeyLegacyDateOnlyEntries(imported);
+                        backfillReasonLogs(imported);
                         let mergedCount = 0;
-                        
-                        Object.keys(imported).forEach(dateKey => {
-                            if (!currentData[dateKey]) {
-                                currentData[dateKey] = imported[dateKey];
-                                mergedCount++;
-                            } else {
-                                // Overwrite if exists (user can re-export if needed)
-                                currentData[dateKey] = imported[dateKey];
-                                mergedCount++;
-                            }
+
+                        Object.keys(imported).forEach(key => {
+                            currentData[key] = imported[key]; // full overwrite if it already exists — user can re-export if needed
+                            mergedCount++;
                         });
-                        
+
                         saveData();
                         showToast(`Imported ${mergedCount} entries`);
                         
@@ -2737,8 +2992,8 @@
         // Print current day's report (nice formatted version)
         function printCurrentDay() {
             saveCurrent(); // ensure latest
-            
-            const entry = currentData[currentDateStr];
+
+            const entry = currentData[currentKey()];
             if (!entry) {
                 showToast('No data to print for this day', true);
                 return;
@@ -2975,6 +3230,9 @@
             }
             
             loadData();
+            rekeyLegacyDateOnlyEntries(currentData);
+            backfillReasonLogs(currentData);
+            saveDataLocal(); // persist the migrated shape immediately rather than leaving it in-memory only
             loadCustomReasons();
             loadReasonRegistry();
             loadDeletedDates();
@@ -3014,65 +3272,92 @@
             // Sync is connected, so fabricated entries can't race the real cloud merge above
             // or get pushed into the shared repo as if they were genuine field records)
             if (Object.keys(currentData).length === 0 && !ghConfig) {
+                // Builds a reasonLog matching a hardcoded reasons list, so if this seeded day is ever
+                // touched by a real mutator later, recomputeDerivedTallyFields() has something to
+                // derive from instead of silently zeroing the fabricated tallies/reasons back out.
+                const seedLog = (cat, texts, ts) => texts.map(text => ({
+                    id: generateLogEntryId(cat),
+                    text,
+                    addedAt: ts,
+                    addedBy: { name: 'Demo Seed', profile: 'demo' },
+                    deletedAt: null
+                }));
+
                 const yesterday = new Date();
                 yesterday.setDate(yesterday.getDate() - 1);
                 const yestStr = yesterday.toISOString().split('T')[0];
-                
-                currentData[yestStr] = {
-                    unit: 'Raiv-T1 / T-53',
-                    tallies: { robotic: 4, tieplate: 2, truck: 1 },
-                    notes: { 
-                        robotic: "Vision failed to detect 2 plates due to heavy rain on sensor.", 
-                        tieplate: "Setter arm needed manual realignment twice.", 
-                        truck: "Hydraulic pressure drop on lift gate." 
-                    },
-                    reasons: {
-                        robotic: [
-                            "Vision system missed tie plate alignment / detection failure",
-                            "Vision system missed tie plate alignment / detection failure",
-                            "Sensor / camera dirty, obstructed, or damaged",
-                            "False positive detection (foreign object or debris)"
-                        ],
-                        tieplate: [
-                            "Mechanical misalignment or wear",
-                            "Mechanical misalignment or wear"
-                        ],
-                        truck: [
-                            "Hydraulic leak or low system pressure"
-                        ]
-                    },
-                    comments: { 
-                        unique: "Rain-related vision problems seen at other sites before.", 
-                        unsafe: "No. All stops were controlled and operators followed SOP.", 
-                        new: "Consider adding wet-surface detection model for vision system." 
-                    },
-                    last_updated: new Date(yesterday.setHours(16, 20)).toISOString()
+                const yestUnit = 'Raiv-T1 / T-53';
+                const yestUpdated = new Date(yesterday.setHours(16, 20)).toISOString();
+                const yestReasons = {
+                    robotic: [
+                        "Vision system missed tie plate alignment / detection failure",
+                        "Vision system missed tie plate alignment / detection failure",
+                        "Sensor / camera dirty, obstructed, or damaged",
+                        "False positive detection (foreign object or debris)"
+                    ],
+                    tieplate: [
+                        "Mechanical misalignment or wear",
+                        "Mechanical misalignment or wear"
+                    ],
+                    truck: [
+                        "Hydraulic leak or low system pressure"
+                    ]
                 };
-                
+
+                currentData[yestStr + '|' + yestUnit] = {
+                    unit: yestUnit,
+                    tallies: { robotic: 4, tieplate: 2, truck: 1 },
+                    notes: {
+                        robotic: "Vision failed to detect 2 plates due to heavy rain on sensor.",
+                        tieplate: "Setter arm needed manual realignment twice.",
+                        truck: "Hydraulic pressure drop on lift gate."
+                    },
+                    reasons: yestReasons,
+                    reasonLog: {
+                        robotic: seedLog('robotic', yestReasons.robotic, yestUpdated),
+                        tieplate: seedLog('tieplate', yestReasons.tieplate, yestUpdated),
+                        truck: seedLog('truck', yestReasons.truck, yestUpdated)
+                    },
+                    comments: {
+                        unique: "Rain-related vision problems seen at other sites before.",
+                        unsafe: "No. All stops were controlled and operators followed SOP.",
+                        new: "Consider adding wet-surface detection model for vision system."
+                    },
+                    last_updated: yestUpdated
+                };
+
                 // Add one more older entry
                 const twoDays = new Date();
                 twoDays.setDate(twoDays.getDate() - 2);
                 const twoStr = twoDays.toISOString().split('T')[0];
-                
-                currentData[twoStr] = {
-                    unit: 'Raiv-T2 / T-57',
+                const twoUnit = 'Raiv-T2 / T-57';
+                const twoUpdated = new Date(twoDays.setHours(11, 45)).toISOString();
+                const twoReasons = {
+                    robotic: ["False positive detection (foreign object or debris)"],
+                    tieplate: [],
+                    truck: []
+                };
+
+                currentData[twoStr + '|' + twoUnit] = {
+                    unit: twoUnit,
                     tallies: { robotic: 1, tieplate: 0, truck: 0 },
                     notes: { robotic: "False positive on foreign object. Cleared manually.", tieplate: "", truck: "" },
-                    reasons: {
-                        robotic: ["False positive detection (foreign object or debris)"],
-                        tieplate: [],
-                        truck: []
+                    reasons: twoReasons,
+                    reasonLog: {
+                        robotic: seedLog('robotic', twoReasons.robotic, twoUpdated),
+                        tieplate: seedLog('tieplate', twoReasons.tieplate, twoUpdated),
+                        truck: seedLog('truck', twoReasons.truck, twoUpdated)
                     },
-                    comments: { 
-                        unique: "Likely isolated.", 
-                        unsafe: "No safety issues.", 
-                        new: "" 
+                    comments: {
+                        unique: "Likely isolated.",
+                        unsafe: "No safety issues.",
+                        new: ""
                     },
-                    last_updated: new Date(twoDays.setHours(11, 45)).toISOString()
+                    last_updated: twoUpdated
                 };
-                
+
                 saveData(); // will no-op if persistence is blocked
-                
+
                 // Reload to show seeded data
                 loadDate(today);
             }
@@ -3098,7 +3383,10 @@
             
             // Auto-save when leaving page (best effort)
             window.addEventListener('beforeunload', () => {
-                if (currentDateStr) saveCurrent();
+                // Best-effort save on unload — skip the conflict-warning confirm() here, since a
+                // blocked/swallowed dialog during unload would discard the user's edit instead of
+                // saving it, the opposite of what this handler is for.
+                if (currentDateStr) saveCurrent(false, true);
             });
             
             // Initial last saved state

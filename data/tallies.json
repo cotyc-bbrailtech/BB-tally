@@ -1,9 +1,9 @@
 {
-  "2026-07-27": {
+  "2026-07-27|Raiv-T2 / T-57": {
     "unit": "Raiv-T2 / T-57",
     "tallies": {
       "robotic": 6,
-      "tieplate": 1,
+      "tieplate": 3,
       "truck": 0
     },
     "notes": {
@@ -36,9 +36,106 @@
       "name": "Coty",
       "profile": "fieldops"
     },
-    "last_updated": "2026-07-28T13:00:53.421Z"
+    "last_updated": "2026-07-28T13:00:53.421Z",
+    "reasonLog": {
+      "robotic": [
+        {
+          "id": "robotic-ms4sf6no-srfi6q",
+          "text": "Robot arm place or alignment error",
+          "addedAt": "2026-07-28T13:00:53.421Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "robotic-ms4sf6no-8xhw2v",
+          "text": "Robot arm place or alignment error",
+          "addedAt": "2026-07-28T13:00:53.421Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "robotic-ms4sf6no-tnw5lg",
+          "text": "False positive detection (foreign object or debris)",
+          "addedAt": "2026-07-28T13:00:53.421Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "robotic-ms4sf6no-yv7cdy",
+          "text": "False positive detection (foreign object or debris)",
+          "addedAt": "2026-07-28T13:00:53.421Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "robotic-ms4sf6no-f9ccg4",
+          "text": "Gripper failed to hold part",
+          "addedAt": "2026-07-28T13:00:53.421Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "robotic-ms4sf6no-kgp29a",
+          "text": "Gripper failed to hold part",
+          "addedAt": "2026-07-28T13:00:53.421Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        }
+      ],
+      "tieplate": [
+        {
+          "id": "tieplate-ms4sf6no-m63gob",
+          "text": "Flipper mechanism malfunction",
+          "addedAt": "2026-07-28T13:00:53.421Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "tieplate-ms4sf6no-0g14g0",
+          "text": "Flipper mechanism malfunction",
+          "addedAt": "2026-07-28T13:00:53.421Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "tieplate-ms4sf6no-r285j1",
+          "text": "Plate misfeed or improper seating in setter",
+          "addedAt": "2026-07-28T13:00:53.421Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        }
+      ],
+      "truck": []
+    }
   },
-  "2026-07-20": {
+  "2026-07-20|Raiv-T1 / T-53": {
     "unit": "Raiv-T1 / T-53",
     "tallies": {
       "robotic": 10,
@@ -75,9 +172,115 @@
       "name": "Coty",
       "profile": "fieldops"
     },
-    "last_updated": "2026-07-28T11:45:22.729Z"
+    "last_updated": "2026-07-28T11:45:22.729Z",
+    "reasonLog": {
+      "robotic": [
+        {
+          "id": "robotic-ms4sf6no-04nskd",
+          "text": "False positive detection (foreign object or debris)",
+          "addedAt": "2026-07-28T11:45:22.729Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "robotic-ms4sf6no-ayo77p",
+          "text": "False positive detection (foreign object or debris)",
+          "addedAt": "2026-07-28T11:45:22.729Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "robotic-ms4sf6no-x9bkvv",
+          "text": "Electrical or control system issue",
+          "addedAt": "2026-07-28T11:45:22.729Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "robotic-ms4sf6no-s7wtvb",
+          "text": "Electrical or control system issue",
+          "addedAt": "2026-07-28T11:45:22.729Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "robotic-ms4sf6no-ez0k5l",
+          "text": "Electrical or control system issue",
+          "addedAt": "2026-07-28T11:45:22.729Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "robotic-ms4sf6no-gled79",
+          "text": "Electrical or control system issue",
+          "addedAt": "2026-07-28T11:45:22.729Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "robotic-ms4sf6no-qq1qza",
+          "text": "Electrical or control system issue",
+          "addedAt": "2026-07-28T11:45:22.729Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "robotic-ms4sf6no-hg5pxs",
+          "text": "Electrical or control system issue",
+          "addedAt": "2026-07-28T11:45:22.729Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "robotic-ms4sf6no-szxqd0",
+          "text": "Electrical or control system issue",
+          "addedAt": "2026-07-28T11:45:22.729Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "robotic-ms4sf6no-ys656r",
+          "text": "Electrical or control system issue",
+          "addedAt": "2026-07-28T11:45:22.729Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        }
+      ],
+      "tieplate": [],
+      "truck": []
+    }
   },
-  "2026-07-19": {
+  "2026-07-19|Raiv-T1 / T-53": {
     "unit": "Raiv-T1 / T-53",
     "tallies": {
       "robotic": 0,
@@ -115,9 +318,125 @@
       "name": "Coty C",
       "profile": "demo"
     },
-    "last_updated": "2026-07-28T11:44:47.239Z"
+    "last_updated": "2026-07-28T11:44:47.239Z",
+    "reasonLog": {
+      "robotic": [],
+      "tieplate": [
+        {
+          "id": "tieplate-ms4sf6no-av3szb",
+          "text": "Bent, damaged, or malformed tie plate",
+          "addedAt": "2026-07-28T11:44:47.239Z",
+          "addedBy": {
+            "name": "Coty C",
+            "profile": "demo"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "tieplate-ms4sf6no-1840th",
+          "text": "Bent, damaged, or malformed tie plate",
+          "addedAt": "2026-07-28T11:44:47.239Z",
+          "addedBy": {
+            "name": "Coty C",
+            "profile": "demo"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "tieplate-ms4sf6no-5cukkk",
+          "text": "Bent, damaged, or malformed tie plate",
+          "addedAt": "2026-07-28T11:44:47.239Z",
+          "addedBy": {
+            "name": "Coty C",
+            "profile": "demo"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "tieplate-ms4sf6no-d3hl2t",
+          "text": "Bent, damaged, or malformed tie plate",
+          "addedAt": "2026-07-28T11:44:47.239Z",
+          "addedBy": {
+            "name": "Coty C",
+            "profile": "demo"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "tieplate-ms4sf6no-8cy8rb",
+          "text": "Bent, damaged, or malformed tie plate",
+          "addedAt": "2026-07-28T11:44:47.239Z",
+          "addedBy": {
+            "name": "Coty C",
+            "profile": "demo"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "tieplate-ms4sf6no-z99iuc",
+          "text": "Bent, damaged, or malformed tie plate",
+          "addedAt": "2026-07-28T11:44:47.239Z",
+          "addedBy": {
+            "name": "Coty C",
+            "profile": "demo"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "tieplate-ms4sf6no-7nzg09",
+          "text": "Bent, damaged, or malformed tie plate",
+          "addedAt": "2026-07-28T11:44:47.239Z",
+          "addedBy": {
+            "name": "Coty C",
+            "profile": "demo"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "tieplate-ms4sf6no-fl7bgc",
+          "text": "Bent, damaged, or malformed tie plate",
+          "addedAt": "2026-07-28T11:44:47.239Z",
+          "addedBy": {
+            "name": "Coty C",
+            "profile": "demo"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "tieplate-ms4sf6no-ww23ws",
+          "text": "Bent, damaged, or malformed tie plate",
+          "addedAt": "2026-07-28T11:44:47.239Z",
+          "addedBy": {
+            "name": "Coty C",
+            "profile": "demo"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "tieplate-ms4sf6no-sfy2zq",
+          "text": "Bent, damaged, or malformed tie plate",
+          "addedAt": "2026-07-28T11:44:47.239Z",
+          "addedBy": {
+            "name": "Coty C",
+            "profile": "demo"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "tieplate-ms4sf6no-b1fjtm",
+          "text": "Flipper mechanism malfunction",
+          "addedAt": "2026-07-28T11:44:47.239Z",
+          "addedBy": {
+            "name": "Coty C",
+            "profile": "demo"
+          },
+          "deletedAt": null
+        }
+      ],
+      "truck": []
+    }
   },
-  "2026-07-15": {
+  "2026-07-15|Raiv-T3 / T-51": {
     "unit": "Raiv-T3 / T-51",
     "tallies": {
       "robotic": 2,
@@ -146,9 +465,35 @@
       "name": "Coty",
       "profile": "developer"
     },
-    "last_updated": "2026-07-28T13:50:41.648Z"
+    "last_updated": "2026-07-28T13:50:41.648Z",
+    "reasonLog": {
+      "robotic": [
+        {
+          "id": "robotic-ms4sf6no-vvxj8r",
+          "text": "Gripper failed to hold part",
+          "addedAt": "2026-07-28T13:50:41.648Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "developer"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "robotic-ms4sf6no-ouff8f",
+          "text": "Vision system pick or alignment error / detection failure",
+          "addedAt": "2026-07-28T13:50:41.648Z",
+          "addedBy": {
+            "name": "Coty",
+            "profile": "developer"
+          },
+          "deletedAt": null
+        }
+      ],
+      "tieplate": [],
+      "truck": []
+    }
   },
-  "2026-07-26": {
+  "2026-07-26|Raiv-T2 / T-57": {
     "unit": "Raiv-T2 / T-57",
     "tallies": {
       "robotic": 1,
@@ -172,9 +517,22 @@
       "unsafe": "No safety issues.",
       "new": ""
     },
-    "last_updated": "2026-07-26T15:45:21.828Z"
+    "last_updated": "2026-07-26T15:45:21.828Z",
+    "reasonLog": {
+      "robotic": [
+        {
+          "id": "robotic-ms4sf6no-sss2m4",
+          "text": "False positive detection (foreign object or debris)",
+          "addedAt": "2026-07-26T15:45:21.828Z",
+          "addedBy": null,
+          "deletedAt": null
+        }
+      ],
+      "tieplate": [],
+      "truck": []
+    }
   },
-  "2026-07-28": {
+  "2026-07-28|(unassigned unit)": {
     "unit": "",
     "tallies": {
       "robotic": 0,
@@ -200,7 +558,12 @@
       "name": "Coty",
       "profile": "developer"
     },
-    "last_updated": "2026-07-28T13:56:55.000Z"
+    "last_updated": "2026-07-28T13:56:55.000Z",
+    "reasonLog": {
+      "robotic": [],
+      "tieplate": [],
+      "truck": []
+    }
   },
   "_reasonRegistry": {
     "_updated": "2026-07-28T13:09:37.386Z",

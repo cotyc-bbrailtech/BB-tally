@@ -13,6 +13,19 @@ Mobile field app for logging human interventions on automated railway systems.
 
 Connect once: **⋯ menu → GitHub Sync Settings**
 
+## Multi-device data integrity
+
+Every day+unit combination is its own entry (`"2026-07-28|Raiv-T1 / T-53"`), so two
+crews working two different units on the same date no longer share — and silently
+overwrite — one entry. Within a single entry, tally counts and reason picks are
+recorded as an append-only log (add/remove, never a bare number), so two devices'
+independent reason picks on the same day both survive a sync instead of one
+clobbering the other; unit/notes/comments still resolve last-write-wins, but
+`saveCurrent()` now warns you (who, when) if someone else's save landed on that
+exact entry since you last opened it, instead of silently overwriting it. A GitHub
+sync conflict (two devices pushing at once) properly re-fetches and re-merges
+before retrying, rather than blindly resending stale data.
+
 ## 1. Enable GitHub Pages (free site)
 
 1. Open https://github.com/cotyc-bbrailtech/BB-tally  
