@@ -816,6 +816,15 @@
             return (reasonRegistry && Array.isArray(reasonRegistry[category])) ? reasonRegistry[category] : [];
         }
 
+        // Maps a reasonLog entry's stored text back to the short label shown on the reason-picker
+        // buttons (getReasonList's item.label) — falls back to the raw text itself if no registry
+        // item's value matches (e.g. a freely-typed custom reason, where addReason() already sets
+        // label === value, so there's no separate shorthand to fall back to anyway).
+        function labelForReasonText(category, text) {
+            const match = getReasonList(category).find(r => r.value === text);
+            return match ? match.label : text;
+        }
+
         // Count-by-text for the CURRENT day/unit/name entry's category — scoped to "this card,
         // today," unlike countReasonUsage() (all-time, cross-entry, used by Insights/Dashboard).
         function reasonCountsForCurrentCard(category) {
@@ -2002,7 +2011,7 @@
 
                 const rows = items.map(([text, count]) => `
                     <div class="flex items-center justify-between gap-3 py-2 px-3 ${info.bg} border ${info.border} rounded-2xl">
-                        <span class="text-sm text-slate-800 flex-1 min-w-0 truncate" title="${escapeHtml(text)}">${escapeHtml(text)}</span>
+                        <span class="text-sm text-slate-800 flex-1 min-w-0 truncate" title="${escapeHtml(text)}">${escapeHtml(labelForReasonText(cat, text))}</span>
                         <span class="shrink-0 text-sm font-bold tabular-nums ${info.text}">×${count}</span>
                     </div>
                 `).join('');
