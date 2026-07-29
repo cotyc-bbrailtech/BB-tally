@@ -811,6 +811,16 @@
             return (reasonRegistry && Array.isArray(reasonRegistry[category])) ? reasonRegistry[category] : [];
         }
 
+        // Count-by-text for the CURRENT day/unit/name entry's category — scoped to "this card,
+        // today," unlike countReasonUsage() (all-time, cross-entry, used by Insights/Dashboard).
+        function reasonCountsForCurrentCard(category) {
+            const entry = currentData[currentKey()];
+            const log = (entry && entry.reasonLog && entry.reasonLog[category]) || [];
+            const counts = new Map();
+            log.forEach(e => { if (!e.deletedAt) counts.set(e.text, (counts.get(e.text) || 0) + 1); });
+            return counts;
+        }
+
         function findReasonById(category, id) {
             return getReasonList(category).find(r => r.id === id) || null;
         }
@@ -1892,6 +1902,10 @@
             const registryReasons = getReasonList(category);
             const withIcon = registryReasons.filter(item => item.icon);
             const withoutIcon = registryReasons.filter(item => !item.icon);
+            const reasonCounts = reasonCountsForCurrentCard(category);
+            const countBadge = count => count > 0
+                ? `<span class="shrink-0 text-[11px] font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full tabular-nums">×${count}</span>`
+                : '';
 
             withIcon.forEach(item => {
                 const btn = document.createElement('button');
@@ -1900,7 +1914,8 @@
                     <div class="w-8 h-8 rounded-full ${colors.bg} flex items-center justify-center flex-shrink-0">
                         <i class="fa-solid ${item.icon} ${colors.icon} text-sm"></i>
                     </div>
-                    <span class="text-sm font-medium text-slate-800 leading-snug">${escapeHtml(item.label)}</span>
+                    <span class="flex-1 min-w-0 text-sm font-medium text-slate-800 leading-snug">${escapeHtml(item.label)}</span>
+                    ${countBadge(reasonCounts.get(item.value) || 0)}
                 `;
                 btn.onclick = () => selectReason(item.value);
                 listEl.appendChild(btn);
@@ -1921,7 +1936,8 @@
                         <div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
                             <i class="fa-solid fa-star text-orange-500 text-sm"></i>
                         </div>
-                        <span class="text-sm font-medium text-slate-800 leading-snug">${escapeHtml(short)}</span>
+                        <span class="flex-1 min-w-0 text-sm font-medium text-slate-800 leading-snug">${escapeHtml(short)}</span>
+                        ${countBadge(reasonCounts.get(item.value) || 0)}
                     `;
                     btn.onclick = () => selectReason(item.value);
                     listEl.appendChild(btn);
