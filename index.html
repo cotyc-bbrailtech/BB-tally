@@ -361,14 +361,19 @@
             </div>
 
             <!-- Total Banner -->
-            <div class="mt-4 bg-white border border-slate-200 rounded-3xl px-5 py-3 flex items-center justify-between shadow-sm no-print">
+            <div onclick="openTodaySummary()"
+                 class="mt-4 bg-white border border-slate-200 rounded-3xl px-5 py-3 flex items-center justify-between shadow-sm no-print cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition-colors">
                 <div class="flex items-center gap-x-3">
                     <div class="text-sm">
                         <span class="font-semibold text-slate-900">Total human interventions today</span>
+                        <div class="text-[11px] text-slate-400">Tap to see reason breakdown</div>
                     </div>
                 </div>
-                <div id="total-count" 
-                     class="text-4xl font-extrabold text-slate-900 tabular-nums tracking-tighter">0</div>
+                <div class="flex items-center gap-x-2">
+                    <div id="total-count"
+                         class="text-4xl font-extrabold text-slate-900 tabular-nums tracking-tighter">0</div>
+                    <i class="fa-solid fa-chevron-right text-slate-300 text-sm"></i>
+                </div>
             </div>
 
             <!-- Comments Section -->
@@ -1972,6 +1977,65 @@
             document.getElementById('reason-custom-area').classList.add('hidden');
             document.body.style.overflow = '';
             currentPickerCategory = null;
+        }
+
+        // Popup showing every reason logged on TODAY'S card (all 3 categories, count > 0),
+        // color-grouped to match each category's theme — reuses reasonCountsForCurrentCard(),
+        // the same per-category counting the reason-picker badges already compute.
+        function openTodaySummary() {
+            const tieplateIconSvg = '<svg class="w-4 h-4 text-amber-600" viewBox="0 0 32 32" fill="none" stroke="currentColor" aria-hidden="true"><g transform="rotate(-16 16 16)"><line x1="1" y1="9" x2="31" y2="9" stroke-width="3" stroke-linecap="round"/><line x1="1" y1="23" x2="31" y2="23" stroke-width="3" stroke-linecap="round"/><circle cx="6.5" cy="16" r="3.4" stroke-width="3"/><circle cx="14.2" cy="16" r="3.4" stroke-width="3"/><circle cx="21.9" cy="16" r="3.4" stroke-width="3"/><circle cx="29.6" cy="16" r="3.4" stroke-width="3"/></g></svg>';
+            const catInfo = {
+                robotic: { name: 'Robotic System', bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-700',
+                    icon: '<i class="fa-solid fa-robot text-sky-600 text-sm"></i>' },
+                tieplate: { name: 'Tie Plate Setter', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700',
+                    icon: tieplateIconSvg },
+                truck: { name: 'Truck Malfunction', bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700',
+                    icon: '<i class="fa-solid fa-truck text-red-600 text-sm"></i>' }
+            };
+
+            const sections = ['robotic', 'tieplate', 'truck'].map(cat => {
+                const info = catInfo[cat];
+                const items = Array.from(reasonCountsForCurrentCard(cat).entries())
+                    .filter(([, count]) => count > 0)
+                    .sort((a, b) => b[1] - a[1]);
+                if (!items.length) return '';
+
+                const rows = items.map(([text, count]) => `
+                    <div class="flex items-center justify-between gap-3 py-2 px-3 ${info.bg} border ${info.border} rounded-2xl">
+                        <span class="text-sm text-slate-800 flex-1 min-w-0 truncate" title="${escapeHtml(text)}">${escapeHtml(text)}</span>
+                        <span class="shrink-0 text-sm font-bold tabular-nums ${info.text}">×${count}</span>
+                    </div>
+                `).join('');
+
+                return `
+                    <div class="mb-4 last:mb-0">
+                        <div class="flex items-center gap-x-2 mb-2 px-1">
+                            ${info.icon}
+                            <span class="text-xs font-bold ${info.text} tracking-wider">${info.name.toUpperCase()}</span>
+                        </div>
+                        <div class="space-y-1.5">${rows}</div>
+                    </div>
+                `;
+            }).join('');
+
+            const bodyHtml = sections || `<div class="text-sm text-slate-400 text-center py-6">No interventions logged yet today.</div>`;
+
+            const html = `
+                <div class="fixed inset-0 bg-black/50 z-[200] flex items-end sm:items-center justify-center" id="today-summary-modal" onclick="this.remove()">
+                    <div class="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto" onclick="event.stopImmediatePropagation()">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <div class="text-[10px] font-bold text-slate-400 tracking-wider">TODAY'S BREAKDOWN</div>
+                                <div class="text-lg font-bold text-slate-900">Reasons logged today</div>
+                            </div>
+                            <button onclick="document.getElementById('today-summary-modal').remove()" class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center">
+                                <i class="fa-solid fa-times text-slate-500"></i>
+                            </button>
+                        </div>
+                        ${bodyHtml}
+                    </div>
+                </div>`;
+            document.body.insertAdjacentHTML('beforeend', html);
         }
 
         function showCustomInput() {
