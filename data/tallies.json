@@ -757,7 +757,7 @@
   "2026-07-20|Raiv-T1 / T-53|Coty": {
     "unit": "Raiv-T1 / T-53",
     "tallies": {
-      "robotic": 41,
+      "robotic": 40,
       "tieplate": 0,
       "truck": 0
     },
@@ -807,8 +807,7 @@
         "Electrical or control system issue",
         "Electrical or control system issue",
         "Electrical or control system issue",
-        "Electrical or control system issue",
-        "Safety interlock or E-stop triggered"
+        "Electrical or control system issue"
       ],
       "tieplate": [],
       "truck": []
@@ -1223,7 +1222,7 @@
             "name": "Coty C",
             "profile": "fieldops"
           },
-          "deletedAt": null
+          "deletedAt": "2026-07-29T13:49:50.744Z"
         }
       ],
       "tieplate": [],
@@ -1238,7 +1237,7 @@
       "name": "Coty C",
       "profile": "fieldops"
     },
-    "last_updated": "2026-07-29T13:49:49.779Z"
+    "last_updated": "2026-07-29T13:49:50.981Z"
   },
   "2026-07-15|Raiv-T3 / T-51|Coty": {
     "unit": "Raiv-T3 / T-51",
