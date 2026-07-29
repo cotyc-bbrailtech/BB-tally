@@ -110,6 +110,35 @@ A **DEV** tab appears in the bottom nav only for Developer devices. It manages t
 
 The reason lists sync across devices the same way tallies do (part of the same shared `data/tallies.json`, last-write-wins) — a Developer's edits show up for every connected crew, not just their own device.
 
+## Weekly Insights email (optional)
+
+A GitHub Actions workflow (`.github/workflows/weekly-insights-email.yml`) can
+email a summary every Monday — same numbers as the in-app **Insights** screen
+with the 7-day range selected (days logged, total interventions, average per
+day, top category, category breakdown, top reasons). It reads
+`data/tallies.json` directly, so it doesn't need the app or a live server
+running. This is entirely optional and does nothing until the setup below is
+done.
+
+**One-time setup** (needs your own Gmail account and this repo's Settings —
+not something that can be done from the app itself):
+
+1. Create a Gmail **App Password** for the account that should send the
+   email: Google Account → **Security** → **2-Step Verification** → **App
+   passwords**.
+2. In this repo: **Settings → Secrets and variables → Actions → New
+   repository secret**, and add all three:
+   - `GMAIL_USER` — the sending Gmail address
+   - `GMAIL_APP_PASSWORD` — the App Password from step 1 (not your normal
+     Gmail password)
+   - `EMAIL_TO` — one recipient address, or a comma-separated list (this is
+     how a management distribution list gets added)
+
+**Testing it**:
+- Locally, without sending anything: `node scripts/weekly-insights-email.mjs --dry-run` prints the email's HTML to the terminal.
+- For a real send on demand (no need to wait for Monday): **Actions tab →
+  Weekly Insights Email → Run workflow**.
+
 ## Local file
 
 Open `index.html` in a browser, or:
@@ -138,6 +167,7 @@ npm run build:css  # regenerates assets/tailwind.css from index.html's classes
 - `assets/tailwind.css` — generated CSS, rebuild with `npm run build:css` after changing classes (see above)
 - `src/input.css` — Tailwind's build input (just an `@import "tailwindcss";`)
 - `data/tallies.json` — shared tallies, synced directly to this repo via the GitHub Contents API (created on first save)  
+- `.github/workflows/weekly-insights-email.yml` / `scripts/weekly-insights-email.mjs` — optional weekly email (see above)
 
 ## License
 
