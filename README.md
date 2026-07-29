@@ -82,6 +82,19 @@ Every device is one of four profiles (a UI-level convenience, not real security 
 
 Devices that haven't set a profile yet default to **Demo** — safe out of the box, nothing destructive can happen until someone deliberately sets a device to Admin, Field Ops, or Developer.
 
+**Demo is a fully isolated, local-only sandbox.** Its tallies live in a separate
+localStorage key from real field data and never sync to GitHub — connecting
+GitHub Sync while on Demo is a no-op (the Cloud Storage fields are hidden in
+Profile & Sync Settings while Demo is selected). A device ships with a few
+weeks of sample entries baked in under the name "Jon Doe" so switching to Demo
+immediately shows realistic-looking History/Insights data, without touching
+any real crew's tallies. Flipping a device's profile to or from Demo swaps
+which set of data it shows — nothing is deleted, just hidden while the other
+profile is active. Any pre-existing entry a device finds tagged as Demo
+(`loggedBy.profile === "demo"`, e.g. from before this separation existed) gets
+moved into the isolated Demo store automatically the next time that data is
+loaded or synced, rather than staying mixed into real analytics.
+
 Switching a device **to** Admin or **to** Developer requires its own shared PIN — `ADMIN_PIN` / `DEVELOPER_PIN`, both hardcoded near the top of `index.html`'s `<script>` block. Change them before/after launch — they're plain constants in the page source, so treat them as a deterrent against casual switching, not a real secret.
 
 Whoever's name + profile last saved a given day's entry shows up in the History tab, the printed report, and both exports ("Logged By").

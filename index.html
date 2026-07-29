@@ -704,6 +704,8 @@
         
         // Data storage
         const STORAGE_KEY = 'bb_tallyboard_v1';
+        const DEMO_STORAGE_KEY = 'bb_tallyboard_demo_v1'; // Demo profile's own isolated, local-only store — never synced to GitHub
+        const DEMO_SEED_FLAG_KEY = 'bb_tally_demo_seeded_v1'; // one-time-ever flag, independent of whether DEMO_STORAGE_KEY is currently empty
         const CUSTOM_REASONS_KEY = 'bb_tally_custom_reasons_v1';
         const DELETED_DATES_KEY = 'bb_tally_deleted_v1';
         const PROFILE_KEY = 'bb_tally_profile_v1';
@@ -1139,10 +1141,111 @@
             return { merged, tombstonesChanged };
         }
 
+        // Strips any entry whose loggedBy.profile === 'demo' OUT of `store` and merges it into the
+        // Demo store's own isolated localStorage key — using mergeDayEntry so a demo-tagged entry
+        // that's arrived from two different sources merges the same way any other cross-store merge
+        // in this file does, rather than inventing a second merge rule. Self-guards on isDemo():
+        // every entry already living in the demo store is demo-tagged by construction, so calling
+        // this on that store itself would otherwise strip everything out of it.
+        function quarantineDemoEntries(store) {
+            if (isDemo()) return false;
+            const demoKeys = Object.keys(store).filter(k => k !== REASON_REGISTRY_FIELD
+                && store[k] && store[k].loggedBy && store[k].loggedBy.profile === 'demo');
+            if (!demoKeys.length) return false;
+            let demoStore = {};
+            try { demoStore = JSON.parse(localStorage.getItem(DEMO_STORAGE_KEY) || '{}'); } catch (e) { demoStore = {}; }
+            demoKeys.forEach(k => {
+                demoStore[k] = mergeDayEntry(demoStore[k], store[k]);
+                delete store[k];
+            });
+            try { localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(demoStore)); } catch (e) { /* ignore */ }
+            return true;
+        }
+
+        const DEMO_UNITS = ['Raiv-T1 / T-53', 'Raiv-T2 / T-57', 'Raiv-T3 / T-51'];
+
+        // Builds ~3 weeks of varied, self-consistent fake history for a fictional "Jon Doe"
+        // (profile: demo) into a plain in-memory object — never touches currentData or any
+        // localStorage key itself, so it's safe to call regardless of which store is currently
+        // active. Uses DEFAULT_REASONS (a synchronously-available plain const) rather than
+        // reasonRegistry, which may not be loaded yet this early in boot.
+        function buildJonDoeDemoSeed() {
+            const store = {};
+            const today = new Date();
+            const rand = n => Math.floor(Math.random() * n);
+            const pick = arr => arr[rand(arr.length)];
+
+            for (let daysAgo = 20; daysAgo >= 1; daysAgo--) {
+                if (rand(4) === 0) continue; // ~1 day in 4 skipped — real crews miss days, not uniform daily output
+
+                const d = new Date(today);
+                d.setDate(d.getDate() - daysAgo);
+                const dateStr = d.toISOString().split('T')[0];
+
+                const unitsToday = rand(5) === 0 ? [DEMO_UNITS[0], DEMO_UNITS[1]] : [pick(DEMO_UNITS)];
+
+                unitsToday.forEach(unit => {
+                    const ts = new Date(d);
+                    ts.setHours(7 + rand(10), rand(60), 0, 0);
+                    const isoTs = ts.toISOString();
+
+                    const reasonLog = { robotic: [], tieplate: [], truck: [] };
+                    const notes = { robotic: '', tieplate: '', truck: '' };
+                    ['robotic', 'tieplate', 'truck'].forEach(cat => {
+                        const seen = [];
+                        const count = rand(4); // 0-3 events per category/day
+                        for (let i = 0; i < count; i++) {
+                            const reason = pick(DEFAULT_REASONS[cat]);
+                            reasonLog[cat].push({
+                                id: generateLogEntryId(cat),
+                                text: reason.value,
+                                addedAt: isoTs,
+                                addedBy: { name: 'Jon Doe', profile: 'demo' },
+                                deletedAt: null
+                            });
+                            if (!seen.includes(reason.value)) seen.push(reason.value);
+                        }
+                        notes[cat] = seen.join('. ');
+                    });
+
+                    const entry = {
+                        unit,
+                        tallies: { robotic: 0, tieplate: 0, truck: 0 },
+                        notes,
+                        reasons: { robotic: [], tieplate: [], truck: [] },
+                        reasonLog,
+                        comments: { unique: '', unsafe: '', new: '' },
+                        loggedBy: { name: 'Jon Doe', profile: 'demo' },
+                        last_updated: isoTs
+                    };
+                    recomputeDerivedTallyFields(entry); // authoritative derivation, same as every real entry
+
+                    store[`${dateStr}|${unit}|Jon Doe`] = entry;
+                });
+            }
+            return store;
+        }
+
+        // Ships baked-in Jon Doe demo history exactly once ever per browser/device — merges
+        // (never overwrites) into whatever's already in DEMO_STORAGE_KEY, so it can never clobber
+        // an entry quarantineDemoEntries() may have just landed there in this same boot.
+        function seedJonDoeDemoDataOnce() {
+            if (localStorage.getItem(DEMO_SEED_FLAG_KEY)) return;
+            try {
+                const existing = JSON.parse(localStorage.getItem(DEMO_STORAGE_KEY) || '{}');
+                const seed = buildJonDoeDemoSeed();
+                Object.keys(seed).forEach(k => { if (!existing[k]) existing[k] = seed[k]; });
+                localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(existing));
+            } catch (e) { console.warn('Could not seed Jon Doe demo data', e); }
+            try { localStorage.setItem(DEMO_SEED_FLAG_KEY, '1'); } catch (e) { /* ignore */ }
+        }
+
         /** Load shared tallies from GitHub (data/tallies.json in the repo) */
         async function initCloud() {
             loadGhConfig();
-            if (!ghConfig) {
+            if (isDemo() || !ghConfig) {
+                // Demo profile is a local-only sandbox — it never pulls from or pushes to the
+                // shared GitHub repo, regardless of whether a device happens to have ghConfig saved.
                 cloudAvailable = false;
                 cloudStatus = 'offline';
                 updateCloudBadge();
@@ -1180,6 +1283,7 @@
                 const decoded = JSON.parse(atob(body.content.replace(/\n/g, '')));
                 rekeyLegacyDateOnlyEntries(decoded);
                 rekeyLegacyUnitOnlyEntries(decoded);
+                quarantineDemoEntries(decoded);
                 mergeReasonRegistryFromRemote(decoded && decoded[REASON_REGISTRY_FIELD]);
                 const { merged, tombstonesChanged } = mergeStores(currentData, decoded);
                 if (tombstonesChanged) saveDeletedDates();
@@ -1202,7 +1306,7 @@
         /** Pull latest shared tallies and refresh whichever read-only view is on screen.
          *  Never touches the Tally view's fields so it can't clobber an in-progress edit. */
         async function refreshFromCloud() {
-            if (!ghConfig) return;
+            if (isDemo() || !ghConfig) return;
             const ok = await initCloud();
             if (!ok) return;
             if (!document.getElementById('history-view').classList.contains('hidden')) {
@@ -1237,7 +1341,7 @@
                 return;
             }
             try {
-                const saved = localStorage.getItem(STORAGE_KEY);
+                const saved = localStorage.getItem(activeStorageKey());
                 currentData = saved ? JSON.parse(saved) : {};
             } catch (e) {
                 console.warn('localStorage unavailable', e);
@@ -1249,7 +1353,7 @@
         function saveDataLocal() {
             if (!persistenceAvailable) return;
             try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(currentData));
+                localStorage.setItem(activeStorageKey(), JSON.stringify(currentData));
             } catch (e) {
                 console.warn('Failed to write localStorage', e);
                 persistenceAvailable = false;
@@ -1287,7 +1391,7 @@
         // Always binds to the live `currentData` global (never a snapshot passed in) so a conflict
         // retry re-merges against current state, not whatever was true when the 1200ms debounce fired.
         async function pushFullStoreToGithub(attempt = 0) {
-            if (!ghConfig) return;
+            if (isDemo() || !ghConfig) return;
             const MAX_PUSH_ATTEMPTS = 3;
             try {
                 // Flush any edit still sitting in its own debounce window before serializing.
@@ -1318,6 +1422,7 @@
                     const remote = await fetchRemoteStore();
                     rekeyLegacyDateOnlyEntries(remote.store);
                     rekeyLegacyUnitOnlyEntries(remote.store);
+                    quarantineDemoEntries(remote.store);
                     mergeReasonRegistryFromRemote(remote.store[REASON_REGISTRY_FIELD]);
                     const { merged, tombstonesChanged } = mergeStores(currentData, remote.store);
                     if (tombstonesChanged) saveDeletedDates();
@@ -1385,21 +1490,25 @@
 
                         <div class="h-px bg-slate-100 my-3"></div>
 
-                        <div class="text-[10px] font-bold text-slate-400 tracking-wider mb-1">CLOUD STORAGE (OPTIONAL)</div>
-                        <p class="text-xs text-slate-500 mb-4">Leave blank to keep this device local-only. Create a fine-grained token with <b>Contents: Read and write</b> on this repo.</p>
-                        <label class="text-[10px] font-bold text-slate-500 block mb-1">Repo owner</label>
-                        <input id="gh-owner" value="${existingGh.owner || ''}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="cotyc-bbrailtech">
-                        <label class="text-[10px] font-bold text-slate-500 block mb-1">Repo name</label>
-                        <input id="gh-repo" value="${existingGh.repo || ''}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="BB-tally">
-                        <label class="text-[10px] font-bold text-slate-500 block mb-1">Personal access token</label>
-                        <input id="gh-token" type="password" value="${existingGh.token || ''}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="github_pat_…">
-                        <label class="text-[10px] font-bold text-slate-500 block mb-1">File path in repo</label>
-                        <input id="gh-path" value="${existingGh.path || 'data/tallies.json'}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-4" placeholder="data/tallies.json">
+                        <p id="gh-demo-note" class="hidden text-xs text-slate-400 italic mb-3">Demo profile is local-only and never syncs to GitHub — this device's Demo data stays on this device no matter what, so there's nothing to configure here while Demo is selected above.</p>
+
+                        <div id="gh-fields-section">
+                            <div class="text-[10px] font-bold text-slate-400 tracking-wider mb-1">CLOUD STORAGE (OPTIONAL)</div>
+                            <p class="text-xs text-slate-500 mb-4">Leave blank to keep this device local-only. Create a fine-grained token with <b>Contents: Read and write</b> on this repo.</p>
+                            <label class="text-[10px] font-bold text-slate-500 block mb-1">Repo owner</label>
+                            <input id="gh-owner" value="${existingGh.owner || ''}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="cotyc-bbrailtech">
+                            <label class="text-[10px] font-bold text-slate-500 block mb-1">Repo name</label>
+                            <input id="gh-repo" value="${existingGh.repo || ''}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="BB-tally">
+                            <label class="text-[10px] font-bold text-slate-500 block mb-1">Personal access token</label>
+                            <input id="gh-token" type="password" value="${existingGh.token || ''}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-3" placeholder="github_pat_…">
+                            <label class="text-[10px] font-bold text-slate-500 block mb-1">File path in repo</label>
+                            <input id="gh-path" value="${existingGh.path || 'data/tallies.json'}" class="w-full border border-slate-300 rounded-2xl px-3 py-2.5 text-sm mb-4" placeholder="data/tallies.json">
+                            <p class="text-[10px] text-slate-400 mb-3">Token stays only on this phone (localStorage). Use a private repo.</p>
+                        </div>
                         <div class="flex gap-2">
                             <button onclick="saveGhSettingsFromForm()" class="flex-1 py-3 bg-slate-900 text-white font-semibold rounded-2xl text-sm">Save</button>
                             <button onclick="clearGhConfig(); document.getElementById('gh-settings-modal').remove(); showToast('GitHub sync disconnected');" class="px-4 py-3 border border-slate-300 rounded-2xl text-sm text-slate-600">Clear GitHub</button>
                         </div>
-                        <p class="text-[10px] text-slate-400 mt-3">Token stays only on this phone (localStorage). Use a private repo.</p>
                     </div>
                 </div>`;
             document.body.insertAdjacentHTML('beforeend', html);
@@ -1417,6 +1526,34 @@
                 document.getElementById('profile-pin-label').textContent = `${label} PIN`;
                 document.getElementById('profile-pin').placeholder = `Enter PIN to unlock ${label}`;
             }
+
+            const isDemoSelected = sel.value === 'demo';
+            const ghSection = document.getElementById('gh-fields-section');
+            const ghNote = document.getElementById('gh-demo-note');
+            if (ghSection) ghSection.classList.toggle('hidden', isDemoSelected);
+            if (ghNote) ghNote.classList.toggle('hidden', !isDemoSelected);
+        }
+
+        // Repoints currentData at whichever store matches the profile that was JUST saved, replays
+        // the same migration pipeline boot already runs, and refreshes whatever's on screen. Called
+        // unconditionally after every profile save — cheap even when the profile didn't actually
+        // change (just a redundant re-read of the same key).
+        function reloadActiveStoreForProfileChange() {
+            if (saveTimeout) {
+                clearTimeout(saveTimeout);
+                saveTimeout = null;
+                saveCurrent(false, true);
+            }
+            loadData();
+            rekeyLegacyDateOnlyEntries(currentData);
+            rekeyLegacyUnitOnlyEntries(currentData);
+            backfillReasonLogs(currentData);
+            quarantineDemoEntries(currentData);
+            saveDataLocal();
+            currentEntryNameOverride = null;
+            loadDate(currentDateStr);
+            if (!document.getElementById('history-view').classList.contains('hidden')) renderHistory();
+            if (!document.getElementById('insights-view').classList.contains('hidden')) renderInsights();
         }
 
         async function saveGhSettingsFromForm() {
@@ -1434,6 +1571,16 @@
             }
             saveProfile({ name: nameVal, profile: selectedProfile });
             applyProfilePermissions();
+            reloadActiveStoreForProfileChange();
+
+            if (selectedProfile === 'demo') {
+                // Demo never syncs (see the isDemo() gates in initCloud/pushFullStoreToGithub/
+                // refreshFromCloud) — the GitHub fields are hidden in the form for this profile too,
+                // so skip reading/acting on them entirely rather than silently no-op-ing.
+                document.getElementById('gh-settings-modal')?.remove();
+                showToast('Demo profile saved (device-only, never syncs)');
+                return;
+            }
 
             // ---- GitHub Sync: optional as a group ----
             const owner = document.getElementById('gh-owner').value.trim();
@@ -1491,6 +1638,13 @@
         function getProfileName() { return (userProfile && userProfile.name) || ''; }
         function isAdmin() { return getProfile() === 'admin'; }
         function isDeveloper() { return getProfile() === 'developer'; }
+        function isDemo() { return getProfile() === 'demo'; }
+
+        // Demo profile's tallies live in a completely separate localStorage key from real field
+        // data — never synced to GitHub (see the isDemo() gates in initCloud/pushFullStoreToGithub/
+        // refreshFromCloud) and never shown alongside real data, since loadData()/saveDataLocal()
+        // read/write through this to decide which store currentData actually points at.
+        function activeStorageKey() { return isDemo() ? DEMO_STORAGE_KEY : STORAGE_KEY; }
 
         // Visibility: Field Ops hides the data-tools row entirely; Admin, Demo, and Developer all show it
         // (Demo shows it but the underlying functions no-op — see canUseDataTools()).
@@ -3081,6 +3235,7 @@
                         rekeyLegacyDateOnlyEntries(imported);
                         rekeyLegacyUnitOnlyEntries(imported);
                         backfillReasonLogs(imported);
+                        quarantineDemoEntries(imported);
                         let mergedCount = 0;
 
                         Object.keys(imported).forEach(key => {
@@ -3240,12 +3395,12 @@
             
             if (persistenceAvailable) {
                 try {
-                    localStorage.removeItem(STORAGE_KEY);
+                    localStorage.removeItem(activeStorageKey());
                 } catch (e) {
                     // ignore
                 }
             }
-            
+
             // Reload clean state for today
             loadDate(getTodayStr());
             showToast('All data cleared');
@@ -3346,15 +3501,21 @@
                 showRestrictedBanner();
             }
             
+            // loadProfile() must run before loadData() — loadData() picks its localStorage key via
+            // activeStorageKey(), which depends on getProfile() correctly reflecting the persisted
+            // profile rather than the pre-load 'demo' fallback (userProfile starts null).
+            loadProfile();
             loadData();
             rekeyLegacyDateOnlyEntries(currentData);
             rekeyLegacyUnitOnlyEntries(currentData);
             backfillReasonLogs(currentData);
+            quarantineDemoEntries(currentData); // no-op while isDemo() — see its own guard
+            seedJonDoeDemoDataOnce(); // ships a few weeks of sample Demo data, once ever per device
+            if (isDemo()) loadData(); // re-read whatever quarantineDemoEntries/seedJonDoeDemoDataOnce just wrote to DEMO_STORAGE_KEY
             saveDataLocal(); // persist the migrated shape immediately rather than leaving it in-memory only
             loadCustomReasons();
             loadReasonRegistry();
             loadDeletedDates();
-            loadProfile();
             applyProfilePermissions();
             rebuildAllReasonSelects();
             
@@ -3385,100 +3546,6 @@
             document.addEventListener('visibilitychange', () => {
                 if (!document.hidden) refreshFromCloud();
             });
-            
-            // Seed demo data if completely empty (first run, device-only — never when GitHub
-            // Sync is connected, so fabricated entries can't race the real cloud merge above
-            // or get pushed into the shared repo as if they were genuine field records)
-            if (Object.keys(currentData).length === 0 && !ghConfig) {
-                // Builds a reasonLog matching a hardcoded reasons list, so if this seeded day is ever
-                // touched by a real mutator later, recomputeDerivedTallyFields() has something to
-                // derive from instead of silently zeroing the fabricated tallies/reasons back out.
-                const seedLog = (cat, texts, ts) => texts.map(text => ({
-                    id: generateLogEntryId(cat),
-                    text,
-                    addedAt: ts,
-                    addedBy: { name: 'Demo Seed', profile: 'demo' },
-                    deletedAt: null
-                }));
-
-                const yesterday = new Date();
-                yesterday.setDate(yesterday.getDate() - 1);
-                const yestStr = yesterday.toISOString().split('T')[0];
-                const yestUnit = 'Raiv-T1 / T-53';
-                const yestUpdated = new Date(yesterday.setHours(16, 20)).toISOString();
-                const yestReasons = {
-                    robotic: [
-                        "Vision system missed tie plate alignment / detection failure",
-                        "Vision system missed tie plate alignment / detection failure",
-                        "Sensor / camera dirty, obstructed, or damaged",
-                        "False positive detection (foreign object or debris)"
-                    ],
-                    tieplate: [
-                        "Mechanical misalignment or wear",
-                        "Mechanical misalignment or wear"
-                    ],
-                    truck: [
-                        "Hydraulic leak or low system pressure"
-                    ]
-                };
-
-                currentData[yestStr + '|' + yestUnit] = {
-                    unit: yestUnit,
-                    tallies: { robotic: 4, tieplate: 2, truck: 1 },
-                    notes: {
-                        robotic: "Vision failed to detect 2 plates due to heavy rain on sensor.",
-                        tieplate: "Setter arm needed manual realignment twice.",
-                        truck: "Hydraulic pressure drop on lift gate."
-                    },
-                    reasons: yestReasons,
-                    reasonLog: {
-                        robotic: seedLog('robotic', yestReasons.robotic, yestUpdated),
-                        tieplate: seedLog('tieplate', yestReasons.tieplate, yestUpdated),
-                        truck: seedLog('truck', yestReasons.truck, yestUpdated)
-                    },
-                    comments: {
-                        unique: "Rain-related vision problems seen at other sites before.",
-                        unsafe: "No. All stops were controlled and operators followed SOP.",
-                        new: "Consider adding wet-surface detection model for vision system."
-                    },
-                    last_updated: yestUpdated
-                };
-
-                // Add one more older entry
-                const twoDays = new Date();
-                twoDays.setDate(twoDays.getDate() - 2);
-                const twoStr = twoDays.toISOString().split('T')[0];
-                const twoUnit = 'Raiv-T2 / T-57';
-                const twoUpdated = new Date(twoDays.setHours(11, 45)).toISOString();
-                const twoReasons = {
-                    robotic: ["False positive detection (foreign object or debris)"],
-                    tieplate: [],
-                    truck: []
-                };
-
-                currentData[twoStr + '|' + twoUnit] = {
-                    unit: twoUnit,
-                    tallies: { robotic: 1, tieplate: 0, truck: 0 },
-                    notes: { robotic: "False positive on foreign object. Cleared manually.", tieplate: "", truck: "" },
-                    reasons: twoReasons,
-                    reasonLog: {
-                        robotic: seedLog('robotic', twoReasons.robotic, twoUpdated),
-                        tieplate: seedLog('tieplate', twoReasons.tieplate, twoUpdated),
-                        truck: seedLog('truck', twoReasons.truck, twoUpdated)
-                    },
-                    comments: {
-                        unique: "Likely isolated.",
-                        unsafe: "No safety issues.",
-                        new: ""
-                    },
-                    last_updated: twoUpdated
-                };
-
-                saveData(); // will no-op if persistence is blocked
-
-                // Reload to show seeded data
-                loadDate(today);
-            }
             
             // Keyboard support for quick +1 on focused tallies (bonus)
             document.addEventListener('keydown', function(e) {
