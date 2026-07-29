@@ -247,7 +247,7 @@
                         <div class="text-xs text-slate-500 font-medium -mt-1">human involvements</div>
                     </div>
                     
-                    <div class="grid grid-cols-3 gap-2 mt-auto pt-3">
+                    <div class="grid grid-cols-2 gap-2 mt-auto pt-3">
                         <button onclick="adjustTally('robotic', -1)"
                                 class="big-button mobile-safe flex items-center justify-center bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold text-2xl rounded-2xl border border-slate-200 active:scale-[0.96]">
                             −
@@ -255,10 +255,6 @@
                         <button onclick="openReasonPicker('robotic')"
                                 class="big-button mobile-safe flex items-center justify-center bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-extrabold text-xl rounded-2xl shadow-sm active:scale-[0.96]">
                             +1
-                        </button>
-                        <button onclick="resetTally('robotic')"
-                                class="big-button mobile-safe flex items-center justify-center text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 active:bg-slate-100 text-slate-600 rounded-2xl">
-                            <i class="fa-solid fa-undo mr-1 text-xs"></i> 0
                         </button>
                     </div>
                     
@@ -300,7 +296,7 @@
                         <div class="text-xs text-slate-500 font-medium -mt-1">human involvements</div>
                     </div>
                     
-                    <div class="grid grid-cols-3 gap-2 mt-auto pt-3">
+                    <div class="grid grid-cols-2 gap-2 mt-auto pt-3">
                         <button onclick="adjustTally('tieplate', -1)"
                                 class="big-button mobile-safe flex items-center justify-center bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold text-2xl rounded-2xl border border-slate-200 active:scale-[0.96]">
                             −
@@ -308,10 +304,6 @@
                         <button onclick="openReasonPicker('tieplate')"
                                 class="big-button mobile-safe flex items-center justify-center bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-extrabold text-xl rounded-2xl shadow-sm active:scale-[0.96]">
                             +1
-                        </button>
-                        <button onclick="resetTally('tieplate')"
-                                class="big-button mobile-safe flex items-center justify-center text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 active:bg-slate-100 text-slate-600 rounded-2xl">
-                            <i class="fa-solid fa-undo mr-1 text-xs"></i> 0
                         </button>
                     </div>
                     
@@ -344,7 +336,7 @@
                         <div class="text-xs text-slate-500 font-medium -mt-1">human involvements</div>
                     </div>
                     
-                    <div class="grid grid-cols-3 gap-2 mt-auto pt-3">
+                    <div class="grid grid-cols-2 gap-2 mt-auto pt-3">
                         <button onclick="adjustTally('truck', -1)"
                                 class="big-button mobile-safe flex items-center justify-center bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold text-2xl rounded-2xl border border-slate-200 active:scale-[0.96]">
                             −
@@ -352,10 +344,6 @@
                         <button onclick="openReasonPicker('truck')"
                                 class="big-button mobile-safe flex items-center justify-center bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-extrabold text-xl rounded-2xl shadow-sm active:scale-[0.96]">
                             +1
-                        </button>
-                        <button onclick="resetTally('truck')"
-                                class="big-button mobile-safe flex items-center justify-center text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 active:bg-slate-100 text-slate-600 rounded-2xl">
-                            <i class="fa-solid fa-undo mr-1 text-xs"></i> 0
                         </button>
                     </div>
                     
@@ -2173,20 +2161,6 @@
             if (!Array.isArray(entry.reasonLog[category])) {
                 entry.reasonLog[category] = [];
             }
-        }
-
-        // Reset single tally — tombstones every currently-alive reasonLog entry for this category
-        function resetTally(category) {
-            if (currentDateStr) {
-                ensureReasonsArray(category);
-                const entry = currentData[currentKey()];
-                const now = new Date().toISOString();
-                entry.reasonLog[category].forEach(e => { if (!e.deletedAt) e.deletedAt = now; });
-                recomputeDerivedTallyFields(entry);
-            }
-            document.getElementById(`${category}-count`).textContent = '0';
-            updateTotalCount();
-            debouncedSave();
         }
 
         // Reset all tallies for current day+unit
