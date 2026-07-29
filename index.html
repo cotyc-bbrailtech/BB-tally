@@ -698,7 +698,7 @@
         // Data storage
         const STORAGE_KEY = 'bb_tallyboard_v1';
         const DEMO_STORAGE_KEY = 'bb_tallyboard_demo_v1'; // Demo profile's own isolated, local-only store — never synced to GitHub
-        const DEMO_SEED_FLAG_KEY = 'bb_tally_demo_seeded_v1'; // one-time-ever flag, independent of whether DEMO_STORAGE_KEY is currently empty
+        const DEMO_SEED_FLAG_KEY = 'bb_tally_demo_seeded_v2'; // bump this string whenever buildJonDoeDemoSeed's content changes meaningfully (e.g. adding comments) — a new key name re-triggers seeding once more on devices that already ran an older version
         const CUSTOM_REASONS_KEY = 'bb_tally_custom_reasons_v1';
         const DELETED_DATES_KEY = 'bb_tally_deleted_v1';
         const PROFILE_KEY = 'bb_tally_profile_v1';
@@ -1176,6 +1176,104 @@
 
         const DEMO_UNITS = ['Raiv-T1 / T-53', 'Raiv-T2 / T-57', 'Raiv-T3 / T-51'];
 
+        // Hand-authored comment pools used by buildDemoComments() below — deliberately specific
+        // and varied rather than generic filler, since the point of the demo is to show how a
+        // field user's day-to-day notes turn into something management can act on.
+        const QUIET_DAY_PHRASES = [
+            'Quiet day — no interventions needed on this unit.',
+            'Smooth run today, nothing to report.',
+            'No downtime today. Unit ran clean start to finish.'
+        ];
+        const FIRST_TIME_PHRASES = [
+            "First time we've seen this on this unit.",
+            "Haven't run into this one here before — isolated so far.",
+            'New one for this unit. Nothing like it in recent memory.',
+            'Hadn\'t seen this here before, but I know it happens occasionally at other sites.'
+        ];
+        const REPEAT_PHRASES = [
+            'Saw this same thing on this unit a little while back too — keeping an eye on it.',
+            'Not the first time this month. Might be worth a closer look if it keeps up.',
+            'This happened once before recently. Noting it in case it becomes a trend.'
+        ];
+        const SEEN_BEFORE_PHRASES = [
+            'This is the third time this month on this unit — probably worth a maintenance ticket instead of another manual reset.',
+            "Same issue as earlier this week. Pattern's pretty clear at this point.",
+            'We keep coming back to this on this unit. Flagging it for the next maintenance review.'
+        ];
+        const SAFETY_SNIPPETS = {
+            robotic: [
+                'Robot arm swung wider than expected during a fault reset while I was reaching in to clear it — no contact, but it startled me. A physical lockout step before manual clearing would help.',
+                'Had to reach into the cell to clear a jam before the E-stop fully registered. Made me uneasy. Would like a hard interlock that kills arm power the moment the gate opens.',
+                'Nothing dangerous today, but the reset sequence puts your hand close to the gripper for a second longer than it should. Worth a guard review.'
+            ],
+            tieplate: [
+                'A plate kicked back off the flipper further than usual while I was clearing a jam — landed near my foot. Better clearance markings around the flipper zone would help.',
+                'Reached in to clear a misfeed and the setter cycled again sooner than expected. No contact, but too close for comfort. Longer reset delay would help.'
+            ],
+            truck: [
+                'Loader magnet let go of a plate mid-lift while I was standing closer than I should have been. Reminder to myself and the crew to stay clear during lifts.',
+                'Hydraulic line had a slow drip near the walkway — cleaned it up, but flagging it before someone slips.'
+            ]
+        };
+        const GRAB_RELATED_REASONS = [
+            'Gripper failed to hold part',
+            'Vision system pick or alignment error / detection failure',
+            'Robot arm place or alignment error'
+        ];
+        const ROBOT_MISS_SNIPPETS = [
+            'Missed the grab on a bent tie plate near the end of the batch — vision flagged it as good but the gripper slid off the warped edge. Had to place it by hand.',
+            'Grabbed a tie plate off-center and dropped it about a foot short of the setter. No damage, just had to walk it over.',
+            'Vision called a good pick on a plate that was actually stacked slightly crooked — gripper only got a partial grip and it slipped. Caught it before it hit the line.',
+            'Tried to place a tie plate that had debris stuck to the underside — setter rejected it and the arm had to cycle twice before it seated right.',
+            'Picked up a plate with a slight burr on the edge that the vision system did not flag — gripper held fine but the setter had trouble seating it.'
+        ];
+
+        // Writes this entry's Tally Board Comments from what was ACTUALLY logged that day, so the
+        // demo reads like a real person's notes rather than generic filler. priorOccurrences tracks
+        // "<unit>|<category>|<reasonText>" -> how many earlier (already-generated) days had this
+        // same pick on this unit, so later days can genuinely reference a real pattern instead of a
+        // disconnected canned line.
+        function buildDemoComments(entry, unit, priorOccurrences) {
+            const rand = n => Math.floor(Math.random() * n);
+            const pick = arr => arr[rand(arr.length)];
+            const labelFor = (cat, text) => {
+                const match = DEFAULT_REASONS[cat].find(r => r.value === text);
+                return match ? match.label : text;
+            };
+
+            const catTotals = ['robotic', 'tieplate', 'truck'].map(cat => ({ cat, n: entry.tallies[cat] }));
+            const top = catTotals.sort((a, b) => b.n - a.n)[0];
+
+            let unique;
+            if (top.n > 0) {
+                const aliveTexts = (entry.reasonLog[top.cat] || []).filter(e => !e.deletedAt).map(e => e.text);
+                const counts = new Map();
+                aliveTexts.forEach(t => counts.set(t, (counts.get(t) || 0) + 1));
+                const topText = Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0][0];
+                const label = labelFor(top.cat, topText);
+                const key = `${unit}|${top.cat}|${topText}`;
+                const priorCount = priorOccurrences[key] || 0;
+                const followUp = priorCount >= 2 ? pick(SEEN_BEFORE_PHRASES) : priorCount === 1 ? pick(REPEAT_PHRASES) : pick(FIRST_TIME_PHRASES);
+                const minutesEst = Math.min(60, 8 + top.n * 6 + rand(10));
+                unique = `${label} was the main slowdown today — cost roughly ${minutesEst} minutes. ${followUp}`;
+            } else {
+                unique = pick(QUIET_DAY_PHRASES);
+            }
+
+            let unsafe = '';
+            if (top.n > 0 && rand(5) === 0) {
+                unsafe = pick(SAFETY_SNIPPETS[top.cat] || SAFETY_SNIPPETS.robotic);
+            }
+
+            let newMiss = '';
+            const roboticTexts = (entry.reasonLog.robotic || []).filter(e => !e.deletedAt).map(e => e.text);
+            if (roboticTexts.some(t => GRAB_RELATED_REASONS.includes(t))) {
+                newMiss = pick(ROBOT_MISS_SNIPPETS);
+            }
+
+            return { unique, unsafe, new: newMiss };
+        }
+
         // Builds ~3 weeks of varied, self-consistent fake history for a fictional "Jon Doe"
         // (profile: demo) into a plain in-memory object — never touches currentData or any
         // localStorage key itself, so it's safe to call regardless of which store is currently
@@ -1186,6 +1284,10 @@
             const today = new Date();
             const rand = n => Math.floor(Math.random() * n);
             const pick = arr => arr[rand(arr.length)];
+            // "<unit>|<category>|<reasonText>" -> how many earlier-generated days had this exact
+            // pick on this unit — the loop below runs oldest-day-first, so this lets later days'
+            // comments genuinely reference a real prior occurrence instead of a disconnected line.
+            const priorOccurrences = {};
 
             for (let daysAgo = 20; daysAgo >= 1; daysAgo--) {
                 if (rand(4) === 0) continue; // ~1 day in 4 skipped — real crews miss days, not uniform daily output
@@ -1231,6 +1333,17 @@
                         last_updated: isoTs
                     };
                     recomputeDerivedTallyFields(entry); // authoritative derivation, same as every real entry
+                    entry.comments = buildDemoComments(entry, unit, priorOccurrences);
+
+                    // Record today's alive picks AFTER writing today's comment, so a day never
+                    // "remembers itself" as a prior occurrence.
+                    ['robotic', 'tieplate', 'truck'].forEach(cat => {
+                        (entry.reasonLog[cat] || []).forEach(e => {
+                            if (e.deletedAt) return;
+                            const key = `${unit}|${cat}|${e.text}`;
+                            priorOccurrences[key] = (priorOccurrences[key] || 0) + 1;
+                        });
+                    });
 
                     store[`${dateStr}|${unit}|Jon Doe`] = entry;
                 });
@@ -1245,6 +1358,15 @@
             if (localStorage.getItem(DEMO_SEED_FLAG_KEY)) return;
             try {
                 const existing = JSON.parse(localStorage.getItem(DEMO_STORAGE_KEY) || '{}');
+                // Purge any Jon Doe seed data from an older DEMO_SEED_FLAG_KEY version before
+                // regenerating, so upgrading the seed's content (e.g. adding comments) doesn't
+                // leave a stale, comment-less batch sitting alongside the new one. Only entries
+                // authored by the seed itself are removed — anything else in the Demo store
+                // (quarantined real entries, or anything typed under a different name) survives.
+                Object.keys(existing).forEach(k => {
+                    const e = existing[k];
+                    if (e && e.loggedBy && e.loggedBy.name === 'Jon Doe' && e.loggedBy.profile === 'demo') delete existing[k];
+                });
                 const seed = buildJonDoeDemoSeed();
                 Object.keys(seed).forEach(k => { if (!existing[k]) existing[k] = seed[k]; });
                 localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(existing));
