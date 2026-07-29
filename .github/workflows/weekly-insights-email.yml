@@ -20,7 +20,10 @@ jobs:
           node-version: '20'
 
       - name: Install nodemailer
-        run: npm install nodemailer --no-save
+        # --ignore-scripts: this step only needs nodemailer's plain JS, and skipping every
+        # package's install scripts avoids any unrelated native-build step (e.g. an unrelated
+        # devDependency's optional binary) from running in a CI environment it wasn't built for.
+        run: npm install nodemailer --no-save --ignore-scripts
 
       - name: Send weekly insights email
         env:
