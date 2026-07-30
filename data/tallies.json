@@ -1,15 +1,19 @@
 {
   "2026-07-22|Raiv-T1 / T-53|(unassigned name)": {
     "unit": "Raiv-T1 / T-53",
-    "tallies": {
-      "robotic": 4,
-      "tieplate": 2,
-      "truck": 1
-    },
     "notes": {
       "robotic": "Vision failed to detect 2 plates due to heavy rain on sensor.",
       "tieplate": "Setter arm needed manual realignment twice.",
       "truck": "Hydraulic pressure drop on lift gate."
+    },
+    "comments": {
+      "unique": "Rain-related vision problems seen at other sites before.",
+      "unsafe": "No. All stops were controlled and operators followed SOP.",
+      "new": "Consider adding wet-surface detection model for vision system."
+    },
+    "loggedBy": {
+      "name": "Coty C",
+      "profile": "fieldops"
     },
     "reasons": {
       "robotic": [
@@ -83,29 +87,26 @@
         }
       ]
     },
-    "comments": {
-      "unique": "Rain-related vision problems seen at other sites before.",
-      "unsafe": "No. All stops were controlled and operators followed SOP.",
-      "new": "Consider adding wet-surface detection model for vision system."
-    },
-    "loggedBy": {
-      "name": "Coty C",
-      "profile": "fieldops"
+    "tallies": {
+      "robotic": 4,
+      "tieplate": 2,
+      "truck": 1
     },
     "last_updated": "2026-07-29T13:36:22.629Z"
   },
   "2026-07-21|Raiv-T2 / T-57|(unassigned name)": {
     "unit": "Raiv-T2 / T-57",
-    "tallies": {
-      "robotic": 1,
-      "tieplate": 0,
-      "truck": 0
-    },
     "notes": {
       "robotic": "False positive on foreign object. Cleared manually.",
       "tieplate": "",
       "truck": ""
     },
+    "comments": {
+      "unique": "Likely isolated.",
+      "unsafe": "No safety issues.",
+      "new": ""
+    },
+    "loggedBy": null,
     "reasons": {
       "robotic": [
         "False positive detection (foreign object or debris)"
@@ -113,12 +114,6 @@
       "tieplate": [],
       "truck": []
     },
-    "comments": {
-      "unique": "Likely isolated.",
-      "unsafe": "No safety issues.",
-      "new": ""
-    },
-    "last_updated": "2026-07-21T15:45:46.975Z",
     "reasonLog": {
       "robotic": [
         {
@@ -131,49 +126,57 @@
       ],
       "tieplate": [],
       "truck": []
-    }
-  },
-  "2026-07-23|(unassigned unit)|(unassigned name)": {
-    "unit": "",
+    },
     "tallies": {
-      "robotic": 0,
+      "robotic": 1,
       "tieplate": 0,
       "truck": 0
     },
+    "last_updated": "2026-07-21T15:45:46.975Z"
+  },
+  "2026-07-23|(unassigned unit)|(unassigned name)": {
+    "unit": "",
     "notes": {
       "robotic": "",
       "tieplate": "",
       "truck": ""
-    },
-    "reasons": {
-      "robotic": [],
-      "tieplate": [],
-      "truck": []
     },
     "comments": {
       "unique": "",
       "unsafe": "",
       "new": ""
     },
-    "last_updated": "2026-07-23T19:35:19.114Z",
+    "loggedBy": null,
+    "reasons": {
+      "robotic": [],
+      "tieplate": [],
+      "truck": []
+    },
     "reasonLog": {
       "robotic": [],
       "tieplate": [],
       "truck": []
-    }
-  },
-  "2026-07-04|(unassigned unit)|(unassigned name)": {
-    "unit": "",
+    },
     "tallies": {
-      "robotic": 8,
+      "robotic": 0,
       "tieplate": 0,
       "truck": 0
     },
+    "last_updated": "2026-07-23T19:35:19.114Z"
+  },
+  "2026-07-04|(unassigned unit)|(unassigned name)": {
+    "unit": "",
     "notes": {
       "robotic": "False positive detection (foreign object or debris)",
       "tieplate": "",
       "truck": ""
     },
+    "comments": {
+      "unique": "",
+      "unsafe": "",
+      "new": ""
+    },
+    "loggedBy": null,
     "reasons": {
       "robotic": [
         "False positive detection (foreign object or debris)",
@@ -188,12 +191,6 @@
       "tieplate": [],
       "truck": []
     },
-    "comments": {
-      "unique": "",
-      "unsafe": "",
-      "new": ""
-    },
-    "last_updated": "2026-07-23T20:30:06.243Z",
     "reasonLog": {
       "robotic": [
         {
@@ -255,7 +252,13 @@
       ],
       "tieplate": [],
       "truck": []
-    }
+    },
+    "tallies": {
+      "robotic": 8,
+      "tieplate": 0,
+      "truck": 0
+    },
+    "last_updated": "2026-07-23T20:30:06.243Z"
   },
   "2026-07-27|Raiv-T2 / T-57|Coty": {
     "unit": "Raiv-T2 / T-57",
@@ -756,15 +759,19 @@
   },
   "2026-07-20|Raiv-T1 / T-53|Coty": {
     "unit": "Raiv-T1 / T-53",
-    "tallies": {
-      "robotic": 40,
-      "tieplate": 0,
-      "truck": 0
-    },
     "notes": {
       "robotic": "False positive detection (foreign object or debris). Electrical or control system issue. Safety interlock or E-stop triggered",
       "tieplate": "",
       "truck": ""
+    },
+    "comments": {
+      "unique": "",
+      "unsafe": "",
+      "new": ""
+    },
+    "loggedBy": {
+      "name": "Coty C",
+      "profile": "fieldops"
     },
     "reasons": {
       "robotic": [
@@ -1228,14 +1235,10 @@
       "tieplate": [],
       "truck": []
     },
-    "comments": {
-      "unique": "",
-      "unsafe": "",
-      "new": ""
-    },
-    "loggedBy": {
-      "name": "Coty C",
-      "profile": "fieldops"
+    "tallies": {
+      "robotic": 40,
+      "tieplate": 0,
+      "truck": 0
     },
     "last_updated": "2026-07-29T13:49:50.981Z"
   },
@@ -1588,6 +1591,39 @@
       "truck": 0
     },
     "last_updated": "2026-07-28T16:11:48.301Z"
+  },
+  "2026-07-21|Raiv-T3 / T-51|Coty C": {
+    "unit": "Raiv-T3 / T-51",
+    "tallies": {
+      "robotic": 0,
+      "tieplate": 0,
+      "truck": 0
+    },
+    "notes": {
+      "robotic": "",
+      "tieplate": "",
+      "truck": ""
+    },
+    "reasons": {
+      "robotic": [],
+      "tieplate": [],
+      "truck": []
+    },
+    "reasonLog": {
+      "robotic": [],
+      "tieplate": [],
+      "truck": []
+    },
+    "comments": {
+      "unique": "",
+      "unsafe": "",
+      "new": ""
+    },
+    "loggedBy": {
+      "name": "Coty C",
+      "profile": "fieldops"
+    },
+    "last_updated": "2026-07-29T20:27:12.296Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-07-28T16:16:46.306Z",
