@@ -1,6 +1,6 @@
 {
   "_reasonRegistry": {
-    "_updated": "2026-07-28T16:16:46.306Z",
+    "_updated": "2026-07-30T11:28:22.294Z",
     "robotic": [
       {
         "id": "robotic-ms4nz7fv-u2x42o",
@@ -34,8 +34,8 @@
       },
       {
         "id": "robotic-ms4nz7fv-qwv959",
-        "label": "Sensor dirty or obstructed",
-        "value": "Sensor / camera dirty, obstructed, or damaged",
+        "label": "Camera obstructed or damaged",
+        "value": "Camera obstructed, or damaged",
         "icon": "fa-camera"
       },
       {
