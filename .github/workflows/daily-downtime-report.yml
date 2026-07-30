@@ -1,0 +1,35 @@
+name: Daily Downtime Report
+
+on:
+  schedule:
+    # Every day at 10:00 UTC. Change the cron to taste:
+    # minute hour day-of-month month day-of-week
+    - cron: '0 10 * * *'
+  workflow_dispatch: {} # lets you trigger a test run manually from the Actions tab
+
+jobs:
+  send-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        # --ignore-scripts: this step only needs plain JS from exceljs/nodemailer, and skipping
+        # every package's install scripts avoids an unrelated devDependency's native-build step
+        # (e.g. @tailwindcss's optional watcher binary) from running in a CI environment it
+        # wasn't built for — this is exactly what broke the weekly-insights-email workflow before
+        # this fix was added there.
+        run: npm install exceljs nodemailer --no-save --ignore-scripts
+
+      - name: Send daily downtime report
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        run: node scripts/downtime-report.mjs

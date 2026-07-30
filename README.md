@@ -139,6 +139,28 @@ not something that can be done from the app itself):
 - For a real send on demand (no need to wait for Monday): **Actions tab →
   Weekly Insights Email → Run workflow**.
 
+## Daily Downtime Report email (optional)
+
+A second workflow (`.github/workflows/daily-downtime-report.yml`) emails an
+Excel workbook every day at 10:00 UTC — a "RAIV — Downtime Report" with:
+
+- **Report** sheet: Key Metrics, Events by Unit, Top 10 Failure Reasons, and
+  Safety & Quality Flags, all scoped to a rolling 30-day window, plus a Daily
+  Events by Unit data table. The Events columns use Excel's native Data Bar
+  conditional formatting for an in-cell bar visual (select the Daily Events
+  by Unit table and **Insert → Chart** if you want an actual chart from it —
+  embedded charts aren't something the generator can write directly, see the
+  comment at the top of `scripts/downtime-report.mjs` for why).
+- **Daily Summary** / **Reasons Log** sheets: the exact same columns as the
+  app's own **Export to Excel** button, all-time (not windowed).
+
+It reuses the same three secrets as the weekly insights email above — no
+additional setup needed if that's already configured.
+
+**Testing it**:
+- Locally, without sending anything: `node scripts/downtime-report.mjs --dry-run` writes `downtime-report-dryrun.xlsx` (git-ignored) so you can open and check it.
+- For a real send on demand: **Actions tab → Daily Downtime Report → Run workflow**.
+
 ## Local file
 
 Open `index.html` in a browser, or:
@@ -168,6 +190,8 @@ npm run build:css  # regenerates assets/tailwind.css from index.html's classes
 - `src/input.css` — Tailwind's build input (just an `@import "tailwindcss";`)
 - `data/tallies.json` — shared tallies, synced directly to this repo via the GitHub Contents API (created on first save)  
 - `.github/workflows/weekly-insights-email.yml` / `scripts/weekly-insights-email.mjs` — optional weekly email (see above)
+- `.github/workflows/daily-downtime-report.yml` / `scripts/downtime-report.mjs` — optional daily Excel report (see above)
+- `scripts/lib/tally-data.mjs` — data-loading helpers shared by both scheduled scripts
 
 ## License
 

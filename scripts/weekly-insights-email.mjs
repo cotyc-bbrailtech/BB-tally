@@ -12,40 +12,10 @@
 //   node scripts/weekly-insights-email.mjs           # sends the real email
 //   node scripts/weekly-insights-email.mjs --dry-run  # prints the HTML, sends nothing
 
-import fs from 'node:fs';
-import path from 'node:path';
 import nodemailer from 'nodemailer';
+import { loadData, getFilteredKeys, CATEGORY_META } from './lib/tally-data.mjs';
 
 const RANGE_DAYS = 7;
-const DATA_PATH = path.join(process.cwd(), 'data', 'tallies.json');
-const REASON_REGISTRY_FIELD = '_reasonRegistry'; // sibling key in tallies.json, never a real date-keyed entry
-
-const CATEGORY_META = {
-  robotic: { label: 'Robotic', color: '#0ea5e9' },
-  tieplate: { label: 'Tie Plate', color: '#f59e0b' },
-  truck: { label: 'Truck', color: '#ef4444' },
-};
-
-function loadData() {
-  if (!fs.existsSync(DATA_PATH)) return {};
-  return JSON.parse(fs.readFileSync(DATA_PATH, 'utf8'));
-}
-
-// Mirrors getFilteredDates() in index.html for a numeric range. Explicitly excludes
-// REASON_REGISTRY_FIELD — index.html's currentData never contains it (mergeStores()
-// strips it out at merge time before it ever reaches currentData), but this script
-// reads the raw wire-format JSON directly, where it IS present as a top-level sibling
-// key. Without this filter it would pass the date-range check ('_reasonRegistry' sorts
-// after any date string) and get counted as an extra day in every email.
-function getFilteredKeys(data, rangeDays) {
-  const allKeys = Object.keys(data)
-    .filter((k) => k !== REASON_REGISTRY_FIELD)
-    .sort();
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - rangeDays);
-  const cutoffStr = cutoff.toISOString().split('T')[0];
-  return allKeys.filter((k) => k.split('|')[0] >= cutoffStr);
-}
 
 // Mirrors renderInsights() in index.html.
 function computeInsights(data, rangeDays) {
@@ -59,12 +29,6 @@ function computeInsights(data, rangeDays) {
 
   keys.forEach((k) => {
     const e = data[k];
-    // Demo-profile entries live in their own isolated local store in the app and should
-    // never appear in real field data/analytics — skip defensively in case one ever
-    // lingers in the shared file (e.g. from a device that hasn't synced the isolation
-    // fix yet).
-    if (e.loggedBy && e.loggedBy.profile === 'demo') return;
-
     totalRobotic += e.tallies?.robotic || 0;
     totalTieplate += e.tallies?.tieplate || 0;
     totalTruck += e.tallies?.truck || 0;

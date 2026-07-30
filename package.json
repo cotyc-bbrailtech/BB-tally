@@ -18,6 +18,7 @@
   "homepage": "https://github.com/cotyc-bbrailtech/BB-tally#readme",
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.3",
+    "exceljs": "^4.4.0",
     "nodemailer": "^9.0.3",
     "tailwindcss": "^4.3.3"
   }
