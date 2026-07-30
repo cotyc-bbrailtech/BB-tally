@@ -1378,50 +1378,6 @@
     },
     "last_updated": "2026-07-29T13:49:24.243Z"
   },
-  "2026-07-28|(unassigned unit)|Coty": {
-    "unit": "",
-    "notes": {
-      "robotic": "",
-      "tieplate": "",
-      "truck": ""
-    },
-    "comments": {
-      "unique": "",
-      "unsafe": "",
-      "new": ""
-    },
-    "loggedBy": {
-      "name": "Coty",
-      "profile": "fieldops"
-    },
-    "reasons": {
-      "robotic": [],
-      "tieplate": [],
-      "truck": []
-    },
-    "reasonLog": {
-      "robotic": [],
-      "tieplate": [],
-      "truck": [
-        {
-          "id": "truck-ms4uun8u-jqik6z",
-          "text": "Rail Gear",
-          "addedAt": "2026-07-28T13:47:26.175Z",
-          "addedBy": {
-            "name": "Coty",
-            "profile": "developer"
-          },
-          "deletedAt": "2026-07-28T16:16:10.920Z"
-        }
-      ]
-    },
-    "tallies": {
-      "robotic": 0,
-      "tieplate": 0,
-      "truck": 0
-    },
-    "last_updated": "2026-07-28T16:16:13.284Z"
-  },
   "2026-07-04|Raiv-T1 / T-53|Coty C": {
     "unit": "Raiv-T1 / T-53",
     "notes": {
