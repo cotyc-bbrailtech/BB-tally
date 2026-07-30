@@ -1,6 +1,6 @@
 {
   "_reasonRegistry": {
-    "_updated": "2026-07-30T11:28:22.294Z",
+    "_updated": "2026-07-30T11:34:09.429Z",
     "robotic": [
       {
         "id": "robotic-ms4nz7fv-u2x42o",
@@ -90,7 +90,7 @@
       },
       {
         "id": "tieplate-ms4nz7fv-bnwzc0",
-        "label": "Pneumatic issue",
+        "label": "Pneumatic leak / low pressure",
         "value": "Pneumatic pressure issue",
         "icon": "fa-wind"
       },
