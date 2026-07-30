@@ -1,6 +1,6 @@
 {
   "_reasonRegistry": {
-    "_updated": "2026-07-30T11:34:09.429Z",
+    "_updated": "2026-07-30T11:38:19.277Z",
     "robotic": [
       {
         "id": "robotic-ms4nz7fv-u2x42o",
@@ -152,8 +152,8 @@
       },
       {
         "id": "truck-ms4nz7fv-b5uih0",
-        "label": "Pneumatic issue",
-        "value": "Pneumatic pressure issue",
+        "label": "Pneumatic leak / low pressure",
+        "value": "Pneumatic leak or low system pressure",
         "icon": "fa-wind"
       }
     ]
