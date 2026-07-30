@@ -1015,6 +1015,42 @@
             return `https://api.github.com/repos/${ghConfig.owner}/${ghConfig.repo}/contents/${p}`;
         }
 
+        // GitHub accepts the workflow FILE NAME directly here (no separate lookup for a numeric
+        // workflow id needed).
+        function ghWorkflowDispatchUrl(workflowFile) {
+            return `https://api.github.com/repos/${ghConfig.owner}/${ghConfig.repo}/actions/workflows/${workflowFile}/dispatches`;
+        }
+
+        // Fires an on-demand run of one of the scheduled report workflows (daily-downtime-report.yml
+        // / weekly-insights-email.yml) via the GitHub Actions "workflow dispatch" API — requires the
+        // same token already stored for GitHub Sync to also have Actions: Read and write permission
+        // (Contents alone isn't enough). A 204 response means the run was queued, not that the email
+        // has actually sent yet — no run-status polling is attempted here, so the toast is worded to
+        // reflect that.
+        async function triggerReportWorkflow(workflowFile, label) {
+            if (!ghConfig) {
+                showToast('Connect GitHub Sync first (Profile & Sync Settings)', true);
+                return;
+            }
+            if (!confirm(`Send the ${label} email now?`)) return;
+            try {
+                const res = await fetch(ghWorkflowDispatchUrl(workflowFile), {
+                    method: 'POST',
+                    headers: { ...ghHeaders(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ref: 'main' })
+                });
+                if (res.status === 204) {
+                    showToast(`${label} triggered — check your email shortly`);
+                    return;
+                }
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || ('HTTP ' + res.status));
+            } catch (e) {
+                console.warn('Workflow dispatch failed', e);
+                showToast(`Could not trigger ${label} (${e.message || 'unknown error'})`, true);
+            }
+        }
+
         // Rekeys any legacy bare-date entry ("2026-07-28") to the compound "date|unit" scheme in
         // place. Self-guarding (skips anything already containing '|'), so it's safe/cheap to call
         // on any store repeatedly — the local store at boot, and freshly-decoded remote data before
@@ -3620,6 +3656,22 @@
                     <span class="font-medium">Clear All Data</span>
                 </button>` : '';
 
+            // Admin/Developer only (not shown to Demo — unlike Import/Clear, there's nothing
+            // meaningful to preview if tapped, so it's hidden entirely rather than shown-but-inert).
+            const canTrigger = canUseDataTools();
+            const downtimeReportRow = canTrigger ? `
+                <button onclick="triggerReportWorkflow('daily-downtime-report.yml', 'Downtime Report'); document.getElementById('more-actions-modal').remove();"
+                        class="w-full flex items-center gap-x-3 px-4 py-3.5 active:bg-slate-100 rounded-2xl text-left">
+                    <i class="fa-solid fa-file-excel w-5 text-slate-500"></i>
+                    <span class="font-medium">Email Downtime Report</span>
+                </button>` : '';
+            const insightsEmailRow = canTrigger ? `
+                <button onclick="triggerReportWorkflow('weekly-insights-email.yml', 'Insights'); document.getElementById('more-actions-modal').remove();"
+                        class="w-full flex items-center gap-x-3 px-4 py-3.5 active:bg-slate-100 rounded-2xl text-left">
+                    <i class="fa-solid fa-chart-line w-5 text-slate-500"></i>
+                    <span class="font-medium">Email Insights Screenshot</span>
+                </button>` : '';
+
             const menuHTML = `
                 <div id="more-actions-modal" class="fixed inset-0 bg-black/40 z-[200] flex items-end" onclick="this.remove()">
                     <div class="bg-white w-full rounded-t-3xl p-2 shadow-2xl" onclick="event.stopImmediatePropagation()">
@@ -3633,6 +3685,8 @@
                         </button>
                         ${importRow}
                         ${clearRow}
+                        ${downtimeReportRow}
+                        ${insightsEmailRow}
 
                         <div class="h-px bg-slate-100 my-1 mx-2"></div>
 

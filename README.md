@@ -133,11 +133,20 @@ not something that can be done from the app itself):
      Gmail password)
    - `EMAIL_TO` — one recipient address, or a comma-separated list (this is
      how a management distribution list gets added)
+3. Optional, only needed for the **in-app** "Email Insights Screenshot" /
+   "Email Downtime Report" buttons (⋯ menu, Admin/Developer profiles) — edit
+   the GitHub Sync token already configured in Profile & Sync Settings
+   (GitHub → **Settings → Developer settings** → your fine-grained token →
+   **Repository permissions**) to add **Actions: Read and write**, alongside
+   the **Contents: Read and write** it already has. Without this, the
+   scheduled/manual Actions-tab triggers below still work fine — it's only
+   the in-app buttons that need it.
 
 **Testing it**:
 - Locally, without sending anything: `node scripts/weekly-insights-email.mjs --dry-run` prints the email's HTML to the terminal.
 - For a real send on demand (no need to wait for Monday): **Actions tab →
-  Weekly Insights Email → Run workflow**.
+  Weekly Insights Email → Run workflow**, or in the app itself: **⋯ → Email
+  Insights Screenshot** (Admin/Developer profiles, once step 3 above is done).
 
 ## Daily Downtime Report email (optional)
 
@@ -159,7 +168,9 @@ additional setup needed if that's already configured.
 
 **Testing it**:
 - Locally, without sending anything: `node scripts/downtime-report.mjs --dry-run` writes `downtime-report-dryrun.xlsx` (git-ignored) so you can open and check it.
-- For a real send on demand: **Actions tab → Daily Downtime Report → Run workflow**.
+- For a real send on demand: **Actions tab → Daily Downtime Report → Run
+  workflow**, or in the app itself: **⋯ → Email Downtime Report**
+  (Admin/Developer profiles, needs the token permission from step 3 above).
 
 ## Local file
 
