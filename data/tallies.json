@@ -7,7 +7,7 @@
       "truck": 0
     },
     "notes": {
-      "robotic": "",
+      "robotic": "False positive detection (foreign object or debris)",
       "tieplate": "",
       "truck": ""
     },
@@ -17,7 +17,18 @@
       "truck": []
     },
     "reasonLog": {
-      "robotic": [],
+      "robotic": [
+        {
+          "id": "robotic-msp3exky-3hfjr4",
+          "text": "False positive detection (foreign object or debris)",
+          "addedAt": "2026-08-11T20:08:25.474Z",
+          "addedBy": {
+            "name": "Trevor Bright",
+            "profile": "fieldops"
+          },
+          "deletedAt": "2026-08-11T20:08:26.957Z"
+        }
+      ],
       "tieplate": [],
       "truck": []
     },
@@ -30,7 +41,7 @@
       "name": "Trevor Bright",
       "profile": "fieldops"
     },
-    "last_updated": "2026-08-11T20:07:56.954Z"
+    "last_updated": "2026-08-11T20:08:27.277Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-07-30T11:38:48.369Z",
