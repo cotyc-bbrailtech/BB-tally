@@ -27,6 +27,16 @@
             "profile": "fieldops"
           },
           "deletedAt": "2026-08-11T20:08:26.957Z"
+        },
+        {
+          "id": "robotic-msp3foz3-tno3mq",
+          "text": "False positive detection (foreign object or debris)",
+          "addedAt": "2026-08-11T20:09:00.975Z",
+          "addedBy": {
+            "name": "Trevor Bright",
+            "profile": "fieldops"
+          },
+          "deletedAt": "2026-08-11T20:09:01.926Z"
         }
       ],
       "tieplate": [],
@@ -41,7 +51,7 @@
       "name": "Trevor Bright",
       "profile": "fieldops"
     },
-    "last_updated": "2026-08-11T20:08:27.277Z"
+    "last_updated": "2026-08-11T20:09:03.729Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-07-30T11:38:48.369Z",
