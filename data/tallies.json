@@ -82,7 +82,7 @@
       "truck": 0
     },
     "notes": {
-      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. \nVision system pick or alignment error / detection failure- plate was crooked",
+      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. \nVision system pick or alignment error / detection failure- plate was crooked on buf",
       "tieplate": "",
       "truck": ""
     },
@@ -151,7 +151,7 @@
       "name": "Trevor Bright",
       "profile": "fieldops"
     },
-    "last_updated": "2026-08-19T14:40:10.244Z"
+    "last_updated": "2026-08-19T14:40:12.458Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-07-30T11:38:48.369Z",
