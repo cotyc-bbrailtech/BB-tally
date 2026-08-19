@@ -82,7 +82,7 @@
       "truck": 0
     },
     "notes": {
-      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. Safety interlock or E-stop triggered",
+      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered",
       "tieplate": "",
       "truck": ""
     },
@@ -129,7 +129,7 @@
       "name": "Trevor Bright",
       "profile": "fieldops"
     },
-    "last_updated": "2026-08-19T14:12:48.419Z"
+    "last_updated": "2026-08-19T14:12:54.392Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-07-30T11:38:48.369Z",
