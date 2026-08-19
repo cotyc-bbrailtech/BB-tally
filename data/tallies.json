@@ -79,12 +79,12 @@
     "tallies": {
       "robotic": 9,
       "tieplate": 0,
-      "truck": 0
+      "truck": 1
     },
     "notes": {
       "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. 3) plate got caught between belt and robot arm. 4) didnât see what caused it, froze and wouldnât reactivate without aborting \nVision system pick or alignment error / detection failure- plate was crooked on buggy. \nReset VUE/program on pendant.\n Robot arm place or alignment error-1)wedged plate in buggy 2) placed plate crooked on buggy.",
       "tieplate": "",
-      "truck": "Tire, track, or mobility problem"
+      "truck": "Tire, track, or mobility problem. Half moon Key weigh in SPS broke"
     },
     "reasons": {
       "robotic": [
@@ -99,7 +99,9 @@
         "Robot arm place or alignment error"
       ],
       "tieplate": [],
-      "truck": []
+      "truck": [
+        "Half moon Key weigh in SPS broke"
+      ]
     },
     "reasonLog": {
       "robotic": [
@@ -205,6 +207,16 @@
             "profile": "fieldops"
           },
           "deletedAt": "2026-08-19T20:06:54.252Z"
+        },
+        {
+          "id": "truck-mt0iw8d8-epktem",
+          "text": "Half moon Key weigh in SPS broke",
+          "addedAt": "2026-08-19T20:07:14.780Z",
+          "addedBy": {
+            "name": "Trevor Bright",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
         }
       ]
     },
@@ -217,10 +229,10 @@
       "name": "Trevor Bright",
       "profile": "fieldops"
     },
-    "last_updated": "2026-08-19T20:06:56.055Z"
+    "last_updated": "2026-08-19T20:07:16.582Z"
   },
   "_reasonRegistry": {
-    "_updated": "2026-08-19T15:29:04.894Z",
+    "_updated": "2026-08-19T20:07:14.779Z",
     "robotic": [
       {
         "id": "robotic-ms4nz7fv-u2x42o",
@@ -381,6 +393,12 @@
         "label": "Pneumatic leak / low pressure",
         "value": "Pneumatic leak or low system pressure",
         "icon": "fa-wind"
+      },
+      {
+        "id": "truck-mt0iw8d7-2k2a6a",
+        "label": "Half moon Key weigh in SPS broke",
+        "value": "Half moon Key weigh in SPS broke",
+        "icon": null
       }
     ]
   }
