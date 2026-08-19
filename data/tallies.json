@@ -77,7 +77,7 @@
   "2026-08-19|Raiv-T3 / T-51|Trevor Bright": {
     "unit": "Raiv-T3 / T-51",
     "notes": {
-      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. 3) plate got caught between belt and robot arm. 4) didnÃ¢ÂÂt see what caused it, froze and wouldnÃ¢ÂÂt reactivate without aborting \nVision system pick or alignment error / detection failure- plate was crooked on buggy. \nReset VUE/program on pendant. (Twice)\n Robot arm place or alignment error-1)wedged plate in buggy 2) placed plate crooked on buggy.",
+      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. 3) plate got caught between belt and robot arm. 4) didnÃÂ¢ÃÂÃÂt see what caused it, froze and wouldnÃÂ¢ÃÂÃÂt reactivate without aborting \nVision system pick or alignment error / detection failure- plate was crooked on buggy. \nReset VUE/program on pendant. (Twice)\n Robot arm place or alignment error-1)wedged plate in buggy 2) placed plate crooked on buggy.",
       "tieplate": "",
       "truck": "Tire, track, or mobility problem. Half moon Key weigh in SPS broke (twice)"
     },
