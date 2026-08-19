@@ -82,7 +82,7 @@
       "truck": 0
     },
     "notes": {
-      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. 3) plate got caught between belt and robot arm. 4) didn’t see what caused it, froze and wouldn’t reactivate without aborting \nVision system pick or alignment error / detection failure- plate was crooked on buggy. \nReset VUE/program on pendant.\n Robot arm place or alignment error-1)wedged plate in buggy",
+      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. 3) plate got caught between belt and robot arm. 4) didn’t see what caused it, froze and wouldn’t reactivate without aborting \nVision system pick or alignment error / detection failure- plate was crooked on buggy. \nReset VUE/program on pendant.\n Robot arm place or alignment error-1)wedged plate in buggy 2",
       "tieplate": "",
       "truck": ""
     },
@@ -206,7 +206,7 @@
       "name": "Trevor Bright",
       "profile": "fieldops"
     },
-    "last_updated": "2026-08-19T16:54:45.847Z"
+    "last_updated": "2026-08-19T16:54:47.048Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-08-19T15:29:04.894Z",
