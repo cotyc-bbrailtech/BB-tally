@@ -76,26 +76,23 @@
   },
   "2026-08-19|Raiv-T3 / T-51|Trevor Bright": {
     "unit": "Raiv-T3 / T-51",
+    "tallies": {
+      "robotic": 5,
+      "tieplate": 0,
+      "truck": 0
+    },
     "notes": {
-      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. \nVision system pick or alignment error / detection failure- plate was crooked on buggy",
+      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. \nVision system pick or alignment error / detection failure- plate was crooked on buggy. Reset VUE/program on pendant",
       "tieplate": "",
       "truck": ""
-    },
-    "comments": {
-      "unique": "",
-      "unsafe": "",
-      "new": ""
-    },
-    "loggedBy": {
-      "name": "Trevor Bright",
-      "profile": "fieldops"
     },
     "reasons": {
       "robotic": [
         "Gripper failed to hold part",
         "Safety interlock or E-stop triggered",
         "Safety interlock or E-stop triggered",
-        "Vision system pick or alignment error / detection failure"
+        "Vision system pick or alignment error / detection failure",
+        "Reset VUE/program on pendant"
       ],
       "tieplate": [],
       "truck": []
@@ -141,20 +138,34 @@
             "profile": "fieldops"
           },
           "deletedAt": null
+        },
+        {
+          "id": "robotic-mt08yidc-2gp4bg",
+          "text": "Reset VUE/program on pendant",
+          "addedAt": "2026-08-19T15:29:04.896Z",
+          "addedBy": {
+            "name": "Trevor Bright",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
         }
       ],
       "tieplate": [],
       "truck": []
     },
-    "tallies": {
-      "robotic": 4,
-      "tieplate": 0,
-      "truck": 0
+    "comments": {
+      "unique": "",
+      "unsafe": "",
+      "new": ""
     },
-    "last_updated": "2026-08-19T14:40:18.959Z"
+    "loggedBy": {
+      "name": "Trevor Bright",
+      "profile": "fieldops"
+    },
+    "last_updated": "2026-08-19T15:29:06.701Z"
   },
   "_reasonRegistry": {
-    "_updated": "2026-07-30T11:38:48.369Z",
+    "_updated": "2026-08-19T15:29:04.894Z",
     "robotic": [
       {
         "id": "robotic-ms4nz7fv-u2x42o",
@@ -209,6 +220,12 @@
         "label": "Pick / alignment error",
         "value": "Vision system pick or alignment error / detection failure",
         "icon": "fa-robot"
+      },
+      {
+        "id": "robotic-mt08yida-1xthlb",
+        "label": "Reset VUE/program on pendant",
+        "value": "Reset VUE/program on pendant",
+        "icon": null
       }
     ],
     "tieplate": [
