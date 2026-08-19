@@ -76,19 +76,15 @@
   },
   "2026-08-19|Raiv-T3 / T-51|Trevor Bright": {
     "unit": "Raiv-T3 / T-51",
+    "tallies": {
+      "robotic": 12,
+      "tieplate": 0,
+      "truck": 2
+    },
     "notes": {
       "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. 3) plate got caught between belt and robot arm. 4) didnÃ¢ÂÂt see what caused it, froze and wouldnÃ¢ÂÂt reactivate without aborting \nVision system pick or alignment error / detection failure- plate was crooked on buggy. \nReset VUE/program on pendant. (Twice)\n Robot arm place or alignment error-1)wedged plate in buggy 2) placed plate crooked on buggy. “Over torque joint 5”",
       "tieplate": "",
       "truck": "Tire, track, or mobility problem. Half moon Key weigh in SPS broke (twice)"
-    },
-    "comments": {
-      "unique": "Key weigh in SPS breaking",
-      "unsafe": "",
-      "new": ""
-    },
-    "loggedBy": {
-      "name": "Trevor Bright",
-      "profile": "fieldops"
     },
     "reasons": {
       "robotic": [
@@ -102,6 +98,7 @@
         "Safety interlock or E-stop triggered",
         "Robot arm place or alignment error",
         "Reset VUE/program on pendant",
+        "“Over torque joint 5”",
         "“Over torque joint 5”"
       ],
       "tieplate": [],
@@ -221,6 +218,16 @@
             "profile": "fieldops"
           },
           "deletedAt": null
+        },
+        {
+          "id": "robotic-mt0qo0gv-ztwgum",
+          "text": "“Over torque joint 5”",
+          "addedAt": "2026-08-19T23:44:48.223Z",
+          "addedBy": {
+            "name": "Trevor Bright",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
         }
       ],
       "tieplate": [],
@@ -257,12 +264,16 @@
         }
       ]
     },
-    "tallies": {
-      "robotic": 11,
-      "tieplate": 0,
-      "truck": 2
+    "comments": {
+      "unique": "Key weigh in SPS breaking",
+      "unsafe": "",
+      "new": ""
     },
-    "last_updated": "2026-08-19T23:44:45.649Z"
+    "loggedBy": {
+      "name": "Trevor Bright",
+      "profile": "fieldops"
+    },
+    "last_updated": "2026-08-19T23:44:50.030Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-08-19T23:44:45.051Z",
