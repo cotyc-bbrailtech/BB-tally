@@ -77,18 +77,19 @@
   "2026-08-19|Raiv-T3 / T-51|Trevor Bright": {
     "unit": "Raiv-T3 / T-51",
     "tallies": {
-      "robotic": 1,
+      "robotic": 2,
       "tieplate": 0,
       "truck": 0
     },
     "notes": {
-      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate",
+      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. Safety interlock or E-stop triggered",
       "tieplate": "",
       "truck": ""
     },
     "reasons": {
       "robotic": [
-        "Gripper failed to hold part"
+        "Gripper failed to hold part",
+        "Safety interlock or E-stop triggered"
       ],
       "tieplate": [],
       "truck": []
@@ -99,6 +100,16 @@
           "id": "robotic-mt05mgox-un97mn",
           "text": "Gripper failed to hold part",
           "addedAt": "2026-08-19T13:55:44.001Z",
+          "addedBy": {
+            "name": "Trevor Bright",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        },
+        {
+          "id": "robotic-mt068dqv-6q6f63",
+          "text": "Safety interlock or E-stop triggered",
+          "addedAt": "2026-08-19T14:12:46.615Z",
           "addedBy": {
             "name": "Trevor Bright",
             "profile": "fieldops"
@@ -118,7 +129,7 @@
       "name": "Trevor Bright",
       "profile": "fieldops"
     },
-    "last_updated": "2026-08-19T13:56:05.111Z"
+    "last_updated": "2026-08-19T14:12:48.419Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-07-30T11:38:48.369Z",
