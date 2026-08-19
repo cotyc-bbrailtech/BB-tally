@@ -76,15 +76,19 @@
   },
   "2026-08-19|Raiv-T3 / T-51|Trevor Bright": {
     "unit": "Raiv-T3 / T-51",
-    "tallies": {
-      "robotic": 9,
-      "tieplate": 0,
-      "truck": 0
-    },
     "notes": {
-      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. 3) plate got caught between belt and robot arm. 4) didn’t see what caused it, froze and wouldn’t reactivate without aborting \nVision system pick or alignment error / detection failure- plate was crooked on buggy. \nReset VUE/program on pendant.\n Robot arm place or alignment error-1)wedged plate in buggy 2) placed plate crooked on buggy.",
+      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. 3) plate got caught between belt and robot arm. 4) didnât see what caused it, froze and wouldnât reactivate without aborting \nVision system pick or alignment error / detection failure- plate was crooked on buggy. \nReset VUE/program on pendant.\n Robot arm place or alignment error-1)wedged plate in buggy 2) placed plate crooked on buggy.",
       "tieplate": "",
-      "truck": ""
+      "truck": "Tire, track, or mobility problem"
+    },
+    "comments": {
+      "unique": "",
+      "unsafe": "",
+      "new": ""
+    },
+    "loggedBy": {
+      "name": "Trevor Bright",
+      "profile": "fieldops"
     },
     "reasons": {
       "robotic": [
@@ -99,7 +103,9 @@
         "Robot arm place or alignment error"
       ],
       "tieplate": [],
-      "truck": []
+      "truck": [
+        "Tire, track, or mobility problem"
+      ]
     },
     "reasonLog": {
       "robotic": [
@@ -195,18 +201,25 @@
         }
       ],
       "tieplate": [],
-      "truck": []
+      "truck": [
+        {
+          "id": "truck-mt0ivni7-4jhoo5",
+          "text": "Tire, track, or mobility problem",
+          "addedAt": "2026-08-19T20:06:47.744Z",
+          "addedBy": {
+            "name": "Trevor Bright",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        }
+      ]
     },
-    "comments": {
-      "unique": "",
-      "unsafe": "",
-      "new": ""
+    "tallies": {
+      "robotic": 9,
+      "tieplate": 0,
+      "truck": 1
     },
-    "loggedBy": {
-      "name": "Trevor Bright",
-      "profile": "fieldops"
-    },
-    "last_updated": "2026-08-19T16:55:08.527Z"
+    "last_updated": "2026-08-19T20:06:48.424Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-08-19T15:29:04.894Z",
