@@ -76,19 +76,15 @@
   },
   "2026-08-19|Raiv-T3 / T-51|Trevor Bright": {
     "unit": "Raiv-T3 / T-51",
+    "tallies": {
+      "robotic": 4,
+      "tieplate": 0,
+      "truck": 0
+    },
     "notes": {
-      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. \nVision system pick or alignment error / detection failure-",
+      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. \nVision system pick or alignment error / detection failure- plate was crooc",
       "tieplate": "",
       "truck": ""
-    },
-    "comments": {
-      "unique": "",
-      "unsafe": "",
-      "new": ""
-    },
-    "loggedBy": {
-      "name": "Trevor Bright",
-      "profile": "fieldops"
     },
     "reasons": {
       "robotic": [
@@ -146,12 +142,16 @@
       "tieplate": [],
       "truck": []
     },
-    "tallies": {
-      "robotic": 4,
-      "tieplate": 0,
-      "truck": 0
+    "comments": {
+      "unique": "",
+      "unsafe": "",
+      "new": ""
     },
-    "last_updated": "2026-08-19T14:40:02.883Z"
+    "loggedBy": {
+      "name": "Trevor Bright",
+      "profile": "fieldops"
+    },
+    "last_updated": "2026-08-19T14:40:08.011Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-07-30T11:38:48.369Z",
