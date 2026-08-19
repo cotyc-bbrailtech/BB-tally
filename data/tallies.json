@@ -77,12 +77,12 @@
   "2026-08-19|Raiv-T3 / T-51|Trevor Bright": {
     "unit": "Raiv-T3 / T-51",
     "tallies": {
-      "robotic": 5,
+      "robotic": 6,
       "tieplate": 0,
       "truck": 0
     },
     "notes": {
-      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. \nVision system pick or alignment error / detection failure- plate was crooked on buggy. \nReset VUE/program on pendant",
+      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. \nVision system pick or alignment error / detection failure- plate was crooked on buggy. \nReset VUE/program on pendant. Robot arm place or alignment error",
       "tieplate": "",
       "truck": ""
     },
@@ -92,7 +92,8 @@
         "Safety interlock or E-stop triggered",
         "Safety interlock or E-stop triggered",
         "Vision system pick or alignment error / detection failure",
-        "Reset VUE/program on pendant"
+        "Reset VUE/program on pendant",
+        "Robot arm place or alignment error"
       ],
       "tieplate": [],
       "truck": []
@@ -148,6 +149,16 @@
             "profile": "fieldops"
           },
           "deletedAt": null
+        },
+        {
+          "id": "robotic-mt0adr09-h1qcuw",
+          "text": "Robot arm place or alignment error",
+          "addedAt": "2026-08-19T16:08:55.545Z",
+          "addedBy": {
+            "name": "Trevor Bright",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
         }
       ],
       "tieplate": [],
@@ -162,7 +173,7 @@
       "name": "Trevor Bright",
       "profile": "fieldops"
     },
-    "last_updated": "2026-08-19T15:29:15.493Z"
+    "last_updated": "2026-08-19T16:08:57.350Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-08-19T15:29:04.894Z",
