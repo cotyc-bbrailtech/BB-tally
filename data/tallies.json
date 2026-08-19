@@ -77,7 +77,7 @@
   "2026-08-19|Raiv-T3 / T-51|Trevor Bright": {
     "unit": "Raiv-T3 / T-51",
     "tallies": {
-      "robotic": 9,
+      "robotic": 10,
       "tieplate": 0,
       "truck": 2
     },
@@ -96,7 +96,8 @@
         "Robot arm place or alignment error",
         "Safety interlock or E-stop triggered",
         "Safety interlock or E-stop triggered",
-        "Robot arm place or alignment error"
+        "Robot arm place or alignment error",
+        "Reset VUE/program on pendant"
       ],
       "tieplate": [],
       "truck": [
@@ -195,6 +196,16 @@
             "profile": "fieldops"
           },
           "deletedAt": null
+        },
+        {
+          "id": "robotic-mt0qir7x-5ax294",
+          "text": "Reset VUE/program on pendant",
+          "addedAt": "2026-08-19T23:40:42.957Z",
+          "addedBy": {
+            "name": "Trevor Bright",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
         }
       ],
       "tieplate": [],
@@ -240,7 +251,7 @@
       "name": "Trevor Bright",
       "profile": "fieldops"
     },
-    "last_updated": "2026-08-19T23:28:43.226Z"
+    "last_updated": "2026-08-19T23:40:44.759Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-08-19T20:07:14.779Z",
