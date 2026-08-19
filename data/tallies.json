@@ -76,15 +76,19 @@
   },
   "2026-08-19|Raiv-T3 / T-51|Trevor Bright": {
     "unit": "Raiv-T3 / T-51",
-    "tallies": {
-      "robotic": 10,
-      "tieplate": 0,
-      "truck": 2
-    },
     "notes": {
-      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. 3) plate got caught between belt and robot arm. 4) didnÃ¢ÂÂt see what caused it, froze and wouldnÃ¢ÂÂt reactivate without aborting \nVision system pick or alignment error / detection failure- plate was crooked on buggy. \nReset VUE/program on pendant. (Teice\n Robot arm place or alignment error-1)wedged plate in buggy 2) placed plate crooked on buggy.",
+      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. 3) plate got caught between belt and robot arm. 4) didnÃ¢ÂÂt see what caused it, froze and wouldnÃ¢ÂÂt reactivate without aborting \nVision system pick or alignment error / detection failure- plate was crooked on buggy. \nReset VUE/program on pendant. (Twice)\n Robot arm place or alignment error-1)wedged plate in buggy 2) placed plate crooked on buggy.",
       "tieplate": "",
       "truck": "Tire, track, or mobility problem. Half moon Key weigh in SPS broke (twice)"
+    },
+    "comments": {
+      "unique": "Key weigh in SPS breaking",
+      "unsafe": "",
+      "new": ""
+    },
+    "loggedBy": {
+      "name": "Trevor Bright",
+      "profile": "fieldops"
     },
     "reasons": {
       "robotic": [
@@ -242,16 +246,12 @@
         }
       ]
     },
-    "comments": {
-      "unique": "Key weigh in SPS breaking",
-      "unsafe": "",
-      "new": ""
+    "tallies": {
+      "robotic": 10,
+      "tieplate": 0,
+      "truck": 2
     },
-    "loggedBy": {
-      "name": "Trevor Bright",
-      "profile": "fieldops"
-    },
-    "last_updated": "2026-08-19T23:40:56.279Z"
+    "last_updated": "2026-08-19T23:40:57.480Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-08-19T20:07:14.779Z",
