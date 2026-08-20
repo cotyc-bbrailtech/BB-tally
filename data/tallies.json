@@ -312,23 +312,20 @@
   },
   "2026-08-20|Raiv-T3 / T-51|Trevor Bright": {
     "unit": "Raiv-T3 / T-51",
+    "tallies": {
+      "robotic": 3,
+      "tieplate": 0,
+      "truck": 0
+    },
     "notes": {
       "robotic": "Robot arm place or alignment error. Overspun plate",
       "tieplate": "",
       "truck": ""
     },
-    "comments": {
-      "unique": "",
-      "unsafe": "",
-      "new": ""
-    },
-    "loggedBy": {
-      "name": "Trevor Bright",
-      "profile": "fieldops"
-    },
     "reasons": {
       "robotic": [
         "Robot arm place or alignment error",
+        "Overspun plate",
         "Overspun plate"
       ],
       "tieplate": [],
@@ -355,17 +352,31 @@
             "profile": "fieldops"
           },
           "deletedAt": null
+        },
+        {
+          "id": "robotic-mt1uqhfy-k0rsnh",
+          "text": "Overspun plate",
+          "addedAt": "2026-08-20T18:26:28.174Z",
+          "addedBy": {
+            "name": "Trevor Bright",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
         }
       ],
       "tieplate": [],
       "truck": []
     },
-    "tallies": {
-      "robotic": 2,
-      "tieplate": 0,
-      "truck": 0
+    "comments": {
+      "unique": "",
+      "unsafe": "",
+      "new": ""
     },
-    "last_updated": "2026-08-20T18:26:25.460Z"
+    "loggedBy": {
+      "name": "Trevor Bright",
+      "profile": "fieldops"
+    },
+    "last_updated": "2026-08-20T18:26:29.978Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-08-20T18:26:24.055Z",
