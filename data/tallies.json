@@ -78,12 +78,12 @@
     "unit": "Raiv-T3 / T-51",
     "tallies": {
       "robotic": 12,
-      "tieplate": 0,
+      "tieplate": 1,
       "truck": 2
     },
     "notes": {
-      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. 3) plate got caught between belt and robot arm. 4) didnÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂt see what caused it, froze and wouldnÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂt reactivate without aborting \nVision system pick or alignment error / detection failure- plate was crooked on buggy. \nReset VUE/program on pendant. (Twice)\n Robot arm place or alignment error-1)wedged plate in buggy 2) placed plate crooked on buggy.\n ÃÂÃÂ¢ÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ",
-      "tieplate": "",
+      "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. 3) plate got caught between belt and robot arm. 4) didnÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂt see what caused it, froze and wouldnÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂt reactivate without aborting \nVision system pick or alignment error / detection failure- plate was crooked on buggy. \nReset VUE/program on pendant. (Twice)\n Robot arm place or alignment error-1)wedged plate in buggy 2) placed plate crooked on buggy.\n ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ",
+      "tieplate": "TPS jam at top of buggy",
       "truck": "Tire, track, or mobility problem. Half moon Key weigh in SPS broke (twice)"
     },
     "reasons": {
@@ -98,10 +98,12 @@
         "Safety interlock or E-stop triggered",
         "Robot arm place or alignment error",
         "Reset VUE/program on pendant",
-        "ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ",
-        "ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ"
+        "ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ",
+        "ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ"
       ],
-      "tieplate": [],
+      "tieplate": [
+        "TPS jam at top of buggy"
+      ],
       "truck": [
         "Half moon Key weigh in SPS broke",
         "Half moon Key weigh in SPS broke"
@@ -211,7 +213,7 @@
         },
         {
           "id": "robotic-mt0qny0t-t8zc9n",
-          "text": "ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ",
+          "text": "ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ",
           "addedAt": "2026-08-19T23:44:45.053Z",
           "addedBy": {
             "name": "Trevor Bright",
@@ -221,7 +223,7 @@
         },
         {
           "id": "robotic-mt0qo0gv-ztwgum",
-          "text": "ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ",
+          "text": "ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ",
           "addedAt": "2026-08-19T23:44:48.223Z",
           "addedBy": {
             "name": "Trevor Bright",
@@ -230,7 +232,18 @@
           "deletedAt": null
         }
       ],
-      "tieplate": [],
+      "tieplate": [
+        {
+          "id": "tieplate-mt1iqgyo-r0p6z4",
+          "text": "TPS jam at top of buggy",
+          "addedAt": "2026-08-20T12:50:32.160Z",
+          "addedBy": {
+            "name": "Trevor Bright",
+            "profile": "fieldops"
+          },
+          "deletedAt": null
+        }
+      ],
       "truck": [
         {
           "id": "truck-mt0ivni7-4jhoo5",
@@ -273,7 +286,7 @@
       "name": "Trevor Bright",
       "profile": "fieldops"
     },
-    "last_updated": "2026-08-20T02:47:36.975Z"
+    "last_updated": "2026-08-20T12:50:33.966Z"
   },
   "2026-08-20|Raiv-T3 / T-51|Trevor Bright": {
     "unit": "Raiv-T3 / T-51",
@@ -309,7 +322,7 @@
     "last_updated": "2026-08-20T02:47:01.039Z"
   },
   "_reasonRegistry": {
-    "_updated": "2026-08-19T23:44:45.051Z",
+    "_updated": "2026-08-20T12:50:32.160Z",
     "robotic": [
       {
         "id": "robotic-ms4nz7fv-u2x42o",
@@ -373,8 +386,8 @@
       },
       {
         "id": "robotic-mt0qny0r-4lv89l",
-        "label": "ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ",
-        "value": "ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ",
+        "label": "ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ",
+        "value": "ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ",
         "icon": null
       }
     ],
@@ -432,6 +445,12 @@
         "label": "Vision Detector miscalibrated",
         "value": "Vision Tie Detector miscalibrated",
         "icon": "fa-eye"
+      },
+      {
+        "id": "tieplate-mt1iqgyo-cdnz94",
+        "label": "TPS jam at top of buggy",
+        "value": "TPS jam at top of buggy",
+        "icon": null
       }
     ],
     "truck": [
