@@ -300,13 +300,13 @@
     "comments": {
       "unique": "Key weigh sheering off twice in SPS",
       "unsafe": "N/A",
-      "new": "Only when a plate would be m"
+      "new": "Only when a plate would be moving when"
     },
     "loggedBy": {
       "name": "Trevor Bright",
       "profile": "fieldops"
     },
-    "last_updated": "2026-08-20T02:46:21.424Z"
+    "last_updated": "2026-08-20T02:46:22.625Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-08-19T23:44:45.051Z",
