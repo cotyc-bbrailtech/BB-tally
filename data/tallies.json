@@ -298,7 +298,7 @@
       "truck": []
     },
     "comments": {
-      "unique": "Key weigh sheering off twice",
+      "unique": "Key weigh sheering off twice in SPS",
       "unsafe": "",
       "new": ""
     },
@@ -306,7 +306,7 @@
       "name": "Trevor Bright",
       "profile": "fieldops"
     },
-    "last_updated": "2026-08-20T02:45:51.864Z"
+    "last_updated": "2026-08-20T02:45:53.671Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-08-19T23:44:45.051Z",
