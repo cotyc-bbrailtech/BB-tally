@@ -277,19 +277,15 @@
   },
   "2026-08-20|Raiv-T3 / T-51|Trevor Bright": {
     "unit": "Raiv-T3 / T-51",
+    "tallies": {
+      "robotic": 0,
+      "tieplate": 0,
+      "truck": 0
+    },
     "notes": {
       "robotic": "",
       "tieplate": "",
       "truck": ""
-    },
-    "comments": {
-      "unique": "Key weigh sheering off twice in SPS",
-      "unsafe": "N/A",
-      "new": "Only when"
-    },
-    "loggedBy": {
-      "name": "Trevor Bright",
-      "profile": "fieldops"
     },
     "reasons": {
       "robotic": [],
@@ -301,12 +297,16 @@
       "tieplate": [],
       "truck": []
     },
-    "tallies": {
-      "robotic": 0,
-      "tieplate": 0,
-      "truck": 0
+    "comments": {
+      "unique": "Key weigh sheering off twice in SPS",
+      "unsafe": "N/A",
+      "new": "Only when a plate would be narred"
     },
-    "last_updated": "2026-08-20T02:46:11.984Z"
+    "loggedBy": {
+      "name": "Trevor Bright",
+      "profile": "fieldops"
+    },
+    "last_updated": "2026-08-20T02:46:18.021Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-08-19T23:44:45.051Z",
