@@ -76,19 +76,15 @@
   },
   "2026-08-19|Raiv-T3 / T-51|Trevor Bright": {
     "unit": "Raiv-T3 / T-51",
+    "tallies": {
+      "robotic": 12,
+      "tieplate": 0,
+      "truck": 2
+    },
     "notes": {
       "robotic": "Gripper failed to hold part- plate was slightly wedged under another plate. \nSafety interlock or E-stop triggered- 1)picked more than 1 plate and froze 2)went to pick plate and froze mid pick. 3) plate got caught between belt and robot arm. 4) didnÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂt see what caused it, froze and wouldnÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂt reactivate without aborting \nVision system pick or alignment error / detection failure- plate was crooked on buggy. \nReset VUE/program on pendant. (Twice)\n Robot arm place or alignment error-1)wedged plate in buggy 2) placed plate crooked on buggy.\n ÃÂÃÂ¢ÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ",
       "tieplate": "",
       "truck": "Tire, track, or mobility problem. Half moon Key weigh in SPS broke (twice)"
-    },
-    "comments": {
-      "unique": "Key weigh in SPS breaking",
-      "unsafe": "",
-      "new": ""
-    },
-    "loggedBy": {
-      "name": "Trevor Bright",
-      "profile": "fieldops"
     },
     "reasons": {
       "robotic": [
@@ -102,8 +98,8 @@
         "Safety interlock or E-stop triggered",
         "Robot arm place or alignment error",
         "Reset VUE/program on pendant",
-        "ÃÂÃÂ¢ÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ",
-        "ÃÂÃÂ¢ÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ"
+        "ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ",
+        "ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ"
       ],
       "tieplate": [],
       "truck": [
@@ -215,7 +211,7 @@
         },
         {
           "id": "robotic-mt0qny0t-t8zc9n",
-          "text": "ÃÂÃÂ¢ÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ",
+          "text": "ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ",
           "addedAt": "2026-08-19T23:44:45.053Z",
           "addedBy": {
             "name": "Trevor Bright",
@@ -225,7 +221,7 @@
         },
         {
           "id": "robotic-mt0qo0gv-ztwgum",
-          "text": "ÃÂÃÂ¢ÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ",
+          "text": "ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ",
           "addedAt": "2026-08-19T23:44:48.223Z",
           "addedBy": {
             "name": "Trevor Bright",
@@ -268,24 +264,32 @@
         }
       ]
     },
-    "tallies": {
-      "robotic": 12,
-      "tieplate": 0,
-      "truck": 2
+    "comments": {
+      "unique": "Key weigh in SPS breaking twice",
+      "unsafe": "N/A",
+      "new": "On"
     },
-    "last_updated": "2026-08-19T23:44:58.849Z"
+    "loggedBy": {
+      "name": "Trevor Bright",
+      "profile": "fieldops"
+    },
+    "last_updated": "2026-08-20T02:47:16.645Z"
   },
   "2026-08-20|Raiv-T3 / T-51|Trevor Bright": {
     "unit": "Raiv-T3 / T-51",
-    "tallies": {
-      "robotic": 0,
-      "tieplate": 0,
-      "truck": 0
-    },
     "notes": {
       "robotic": "",
       "tieplate": "",
       "truck": ""
+    },
+    "comments": {
+      "unique": "",
+      "unsafe": "",
+      "new": ""
+    },
+    "loggedBy": {
+      "name": "Trevor Bright",
+      "profile": "fieldops"
     },
     "reasons": {
       "robotic": [],
@@ -297,14 +301,10 @@
       "tieplate": [],
       "truck": []
     },
-    "comments": {
-      "unique": "",
-      "unsafe": "",
-      "new": ""
-    },
-    "loggedBy": {
-      "name": "Trevor Bright",
-      "profile": "fieldops"
+    "tallies": {
+      "robotic": 0,
+      "tieplate": 0,
+      "truck": 0
     },
     "last_updated": "2026-08-20T02:47:01.039Z"
   },
@@ -373,8 +373,8 @@
       },
       {
         "id": "robotic-mt0qny0r-4lv89l",
-        "label": "ÃÂÃÂ¢ÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ",
-        "value": "ÃÂÃÂ¢ÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ",
+        "label": "ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ",
+        "value": "ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂOver torque joint 5ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ",
         "icon": null
       }
     ],
