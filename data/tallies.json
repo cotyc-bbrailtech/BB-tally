@@ -267,13 +267,13 @@
     "comments": {
       "unique": "Key weigh in SPS breaking twice",
       "unsafe": "N/A",
-      "new": "Only when a plate would be moving while"
+      "new": "Only when a plate would be moving while the cam"
     },
     "loggedBy": {
       "name": "Trevor Bright",
       "profile": "fieldops"
     },
-    "last_updated": "2026-08-20T02:47:23.706Z"
+    "last_updated": "2026-08-20T02:47:24.908Z"
   },
   "2026-08-20|Raiv-T3 / T-51|Trevor Bright": {
     "unit": "Raiv-T3 / T-51",
