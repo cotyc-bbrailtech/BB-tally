@@ -299,14 +299,14 @@
     },
     "comments": {
       "unique": "Key weigh sheering off twice in SPS",
-      "unsafe": "",
+      "unsafe": "N/A",
       "new": ""
     },
     "loggedBy": {
       "name": "Trevor Bright",
       "profile": "fieldops"
     },
-    "last_updated": "2026-08-20T02:45:53.671Z"
+    "last_updated": "2026-08-20T02:45:59.026Z"
   },
   "_reasonRegistry": {
     "_updated": "2026-08-19T23:44:45.051Z",
